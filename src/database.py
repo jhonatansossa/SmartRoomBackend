@@ -75,8 +75,8 @@ class Names(db.Model):
     def serialize(self):
        """Return object data in easily serializable format"""
        return {
-           'Id'         : self.ID,
-           'Name': self.NAME
+           'id'         : self.ID,
+           'name': self.NAME
        }
 
 
