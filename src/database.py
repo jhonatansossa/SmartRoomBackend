@@ -51,3 +51,36 @@ class Bookmark(db.Model):
         return 'Bookmark >>> {self.url}'
 
 
+class Relations(db.Model):
+    ID=db.Column(db.String(2), primary_key=True)
+    ACTIVEIMPORTID=db.Column(db.String(2), nullable=True)
+    ACTIVEEXPORTID=db.Column(db.String(2), nullable=True)
+    REACTIVEIMPORTID=db.Column(db.String(2), nullable=True)
+    REACTIVEEXPORTID=db.Column(db.String(2), nullable=True)
+    APPARENTIMPORTID=db.Column(db.String(2), nullable=True)
+    APPARENTEXPORTID=db.Column(db.String(2), nullable=True)
+
+    def __repr__(self) -> str:
+        return 'Id >>> {self.ID}'
+
+
+class Names(db.Model):
+    ID=db.Column(db.String(2), primary_key=True)
+    NAME=db.Column(db.String(30), nullable=True)
+
+    def __repr__(self) -> str:
+        return 'Name >>> {self.NAME}'
+
+    @property
+    def serialize(self):
+       """Return object data in easily serializable format"""
+       return {
+           'Id'         : self.ID,
+           'Name': self.NAME
+       }
+
+
+
+
+
+

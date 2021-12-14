@@ -3,6 +3,7 @@ import os
 from src.auth import auth
 from src.bookmarks import bookmarks
 from src.database import db
+from src.devices import devices
 from flask_jwt_extended import JWTManager
 
 #Application Factory
@@ -31,5 +32,6 @@ def create_app(test_config=None):
 
     app.register_blueprint(auth)
     app.register_blueprint(bookmarks)
+    app.register_blueprint(devices)
 
     return app
