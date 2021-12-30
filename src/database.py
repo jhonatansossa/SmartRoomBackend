@@ -59,9 +59,23 @@ class Relations(db.Model):
     REACTIVEEXPORTID=db.Column(db.String(2), nullable=True)
     APPARENTIMPORTID=db.Column(db.String(2), nullable=True)
     APPARENTEXPORTID=db.Column(db.String(2), nullable=True)
+    
 
     def __repr__(self) -> str:
         return 'Id >>> {self.ID}'
+
+    @property
+    def serialize(self):
+       """Return object data in easily serializable format"""
+       return {
+           'id'         : self.ID,
+           'ACTIVEIMPORTID'         : self.ACTIVEIMPORTID,
+           'ACTIVEEXPORTID'         : self.ACTIVEEXPORTID,
+           'REACTIVEIMPORTID'         : self.REACTIVEIMPORTID,
+           'REACTIVEEXPORTID'         : self.REACTIVEEXPORTID,
+           'APPARENTIMPORTID'         : self.APPARENTIMPORTID,
+           'APPARENTEXPORTID'         : self.APPARENTEXPORTID
+       }
 
 
 class Names(db.Model):
@@ -78,6 +92,22 @@ class Names(db.Model):
            'id'         : self.ID,
            'name': self.NAME
        }
+
+
+def create_item_models(table_name):
+    class Item(db.Model):
+        __tablename__  = table_name 
+        __table_args__ = {'extend_existing': True}
+        TIME= db.Column(db.DateTime, primary_key=True, nullable=False) 
+        VALUE= db.Column(db.Float, nullable=True)
+
+        @property 
+        def serialize(self):
+            "Return object data in easily serializable format"""
+            return {
+                'time' : self.TIME, 'value': self.VALUE
+            }
+    return Item
 
 
 
