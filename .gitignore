@@ -4,3 +4,6 @@
 __pycache__/
 
 instance/
+smart_room_backend.egg-info/
+dist/
+build/
