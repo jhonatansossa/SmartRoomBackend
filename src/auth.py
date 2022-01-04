@@ -60,7 +60,6 @@ def login():
     password=request.json.get('password', '')
 
     user=User.query.filter_by(email=email).first()
-
     if user:
         is_pass_correct=check_password_hash(user.password, password)
 
@@ -87,7 +86,7 @@ def login():
 def me():
     user_id = get_jwt_identity()
     user=User.query.filter_by(id=user_id).first()
-
+    
     return jsonify({
 
         'username': user.username,
