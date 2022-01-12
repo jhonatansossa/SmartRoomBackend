@@ -13,5 +13,6 @@ setup(
         'Flask-JWT-Extended',
         'validators',
         'mysqlclient',
+        'flask-cors',
     ],
 )
