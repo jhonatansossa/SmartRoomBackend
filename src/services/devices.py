@@ -1,24 +1,18 @@
 from flask import Blueprint, jsonify, request, make_response
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
-from src.database import Relations, Names, db, create_item_models
-from src.database import User
+from src.model.database import Relations, Names, db, create_item_models
+from src.model.database import User
 from sqlalchemy import func
 
 devices = Blueprint("devices", __name__, url_prefix="/api/v1/devices")
-
 energy_types = {'active_import_energy': 'ACTIVEIMPORTID', 'active_export_energy': 'ACTIVEEXPORTID', 
                 'reactive_import_energy': 'REACTIVEIMPORTID', 'reactive_export_energy': 'REACTIVEEXPORTID',  
                 'apparent_import_energy': 'APPARENTIMPORTID', 'apparent_export_energy': 'APPARENTEXPORTID'}
 
 @devices.get('/alldevices')
 def get_all():
-
     name=Names.query.all()
-
     return jsonify(devices=[i.serialize for i in name]), HTTP_200_OK
-
-#select time from item0001 where time = (select max(time) from item0001 where time <= '2021-12-01 02:47:00');
-#select * from item00+
 
 @devices.post('/getlastmeasurements')
 def last_mesurement():

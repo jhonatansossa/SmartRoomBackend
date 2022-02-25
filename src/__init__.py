@@ -1,9 +1,9 @@
 from flask import Flask
 import os
-from src.auth import auth
-from src.bookmarks import bookmarks
-from src.database import db
-from src.devices import devices
+from src.services.auth import auth
+from src.services.bookmarks import bookmarks
+from src.model.database import db
+from src.services.devices import devices
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 
