@@ -20,7 +20,6 @@ PyJWT==2.6.0
 python-decouple==3.6
 python-dotenv==0.21.0
 six==1.16.0
-smart-room-backend==0.0.1
 SQLAlchemy==1.4.42
 tomli==2.0.1
 typing_extensions==4.4.0
