@@ -1,7 +1,0 @@
-flask
-python-dotenv
-Flask-SQLAlchemy
-Flask-JWT-Extended
-validators
-mysqlclient
-flask-cors
