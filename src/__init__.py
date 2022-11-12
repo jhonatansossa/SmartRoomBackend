@@ -27,7 +27,7 @@ def create_app(test_config=None):
     else:
         app.config.from_mapping(test_config)
 
-
+    
     db.app=app
     db.init_app(app)
 
