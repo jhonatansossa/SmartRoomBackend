@@ -13,7 +13,6 @@ def create_app(test_config=None):
     app=Flask(__name__,
     instance_relative_config=True)
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     if test_config is None:
 
