@@ -1,0 +1,38 @@
+Get data from each device
+---
+tags:
+  - Devices
+parameters:
+  - name: body
+    description: The body should contain the user desired measurement data
+    in: body
+    required: true
+    schema:
+      type: object
+      required:
+        - "id"
+        - "measurement"
+        - "start_time"
+        - "end_time"
+      properties:
+        id:
+          type: "integer"
+          example: 30
+        measurement:
+          type: "string"
+          example: "active_import_energy"
+        start_time:
+          type: "string"
+          example: "2021-12-01 02:26:20"
+        end_time:
+          type: "string"
+          example: "2021-12-01 02:59:40"
+responses:
+  200:
+    description: When the data is retrieved successfully
+
+  404:
+    description: The measure was not found
+
+  400:
+    description: Bad request (Wrond id or the start time is greater than end time)

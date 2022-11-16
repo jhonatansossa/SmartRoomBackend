@@ -3,6 +3,7 @@ from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, H
 from src.database import Relations, Names, db, create_item_models
 from src.database import User
 from sqlalchemy import func
+from flasgger import swag_from
 
 devices = Blueprint("devices", __name__, url_prefix="/api/v1/devices")
 
@@ -11,6 +12,7 @@ energy_types = {'active_import_energy': 'ACTIVEIMPORTID', 'active_export_energy'
                 'apparent_import_energy': 'APPARENTIMPORTID', 'apparent_export_energy': 'APPARENTEXPORTID'}
 
 @devices.get('/alldevices')
+@swag_from('./docs/devices/get_all.yml')
 def get_all():
 
     name=Names.query.all()
@@ -21,33 +23,34 @@ def get_all():
 #select * from item00+
 
 @devices.post('/getlastmeasurements')
-def last_mesurement():
+@swag_from('./docs/devices/last_measurement.yml')
+def last_measurement():
     ID=request.json.get('id', '')
-    measure=request.json.get('measure', '')
+    measurement=request.json.get('measurement', '')
     start_time=request.json.get('start_time', '')
-    final_time=request.json.get('final_time', '')
+    end_time=request.json.get('end_time', '')
 
-    if start_time >= final_time:
+    if start_time >= end_time:
         response = make_response(jsonify({
-            'error': 'The start time is greater than final time'
+            'error': 'The start time is greater than end time'
         }))
         response.status_code=HTTP_400_BAD_REQUEST
     else: 
         names=Names.query.filter_by(ID=ID).first()
         if names:
-            if measure in energy_types:
+            if measurement in energy_types:
                 relations = Relations.query.filter_by(ID=ID).first()
-                col_name = energy_types[measure]
+                col_name = energy_types[measurement]
                 
                 id = relations.serialize[col_name]
 
                 if id:
                     item = create_item_models('item00'+str(id))
-                    query = item.query.filter(item.TIME >= start_time, item.TIME <= final_time).all()
+                    query = item.query.filter(item.TIME >= start_time, item.TIME <= end_time).all()
                     response = make_response(jsonify(lastMeasurements=[i.serialize for i in query]))
                     response.status_code=HTTP_200_OK
                 else:
-                    response = make_response(jsonify({'error': 'The measure was not found'}))
+                    response = make_response(jsonify({'error': 'The measurement was not found'}))
                     response.status_code=HTTP_404_NOT_FOUND
         else: 
             response = make_response(jsonify({'error': 'Wrong id'}))

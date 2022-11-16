@@ -1,0 +1,16 @@
+GET information from all devices
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: false
+
+responses:
+  200:
+    description: Devices info is retrieved
+
+  400:
+    description: Fails to get items due to internal error

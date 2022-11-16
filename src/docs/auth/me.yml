@@ -1,0 +1,16 @@
+GET information about user
+---
+tags:
+  - Authentication
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: User info is retrieved
+
+  400:
+    description: Fails to get items due to internal error
