@@ -4,6 +4,7 @@ from src.database import Relations, Names, db, create_item_models
 from src.database import User
 from sqlalchemy import func
 from flasgger import swag_from
+from flask_jwt_extended import jwt_required
 
 devices = Blueprint("devices", __name__, url_prefix="/api/v1/devices")
 
@@ -13,6 +14,7 @@ energy_types = {'active_import_energy': 'ACTIVEIMPORTID', 'active_export_energy'
 
 @devices.get('/alldevices')
 @swag_from('./docs/devices/get_all.yml')
+@jwt_required()
 def get_all():
 
     name=Names.query.all()
@@ -24,6 +26,7 @@ def get_all():
 
 @devices.post('/getlastmeasurements')
 @swag_from('./docs/devices/last_measurement.yml')
+@jwt_required()
 def last_measurement():
     ID=request.json.get('id', '')
     measurement=request.json.get('measurement', '')
@@ -52,6 +55,9 @@ def last_measurement():
                 else:
                     response = make_response(jsonify({'error': 'The measurement was not found'}))
                     response.status_code=HTTP_404_NOT_FOUND
+            else:
+                response = make_response(jsonify({'error': 'That measurement does not exist'}))
+                response.status_code=HTTP_404_NOT_FOUND
         else: 
             response = make_response(jsonify({'error': 'Wrong id'}))
             response.status_code = HTTP_400_BAD_REQUEST

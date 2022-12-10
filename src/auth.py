@@ -5,6 +5,7 @@ from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_
 from src.database import User, db
 from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity
 from flasgger import swag_from
+from datetime import timedelta  # libreria nueva para el tiempo de expiracion de tokens
 
 auth = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
@@ -67,8 +68,8 @@ def login():
         is_pass_correct=check_password_hash(user.password, password)
 
         if is_pass_correct:
-            refresh=create_refresh_token(identity=user.id)
-            access=create_access_token(identity=user.id)
+            refresh=create_refresh_token(identity=user.id, expires_delta=timedelta(days=3)) # expiracion de tokens de 3 dias
+            access=create_access_token(identity=user.id, expires_delta=timedelta(days=3))   # expiracion de tokens 3 dias
 
             return jsonify({
                 'user':{

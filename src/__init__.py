@@ -1,5 +1,6 @@
 from flask import Flask
 import os
+from datetime import timedelta  # nueva libreria para tiempo
 from src.auth import auth
 from src.bookmarks import bookmarks
 from src.database import db
@@ -35,6 +36,10 @@ def create_app(test_config=None):
     
     db.app=app
     db.init_app(app)
+
+    # config para tiempo de refresh de tokens
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=3)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=3)
 
     JWTManager(app)
 
