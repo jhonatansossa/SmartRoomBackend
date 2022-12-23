@@ -23,22 +23,30 @@ OPENHAB_PORT=os.environ.get("OPENHAB_PORT")
 @swag_from('./docs/devices/get_all.yml')
 @jwt_required()
 def get_all():
-
     items = requests.get('http://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false')
-
-    return items.json(), HTTP_200_OK
-
-#select time from item0001 where time = (select max(time) from item0001 where time <= '2021-12-01 02:47:00');
-#select * from item00+
+    if items.ok:
+        return items.json(), HTTP_200_OK
+    else:
+        response = make_response(jsonify({
+                'error': 'The service is not available'
+            }))
+        response.status_code=HTTP_503_SERVICE_UNAVAILABLE
+        return response
 
 
 @devices.get("/items/<itemname>")
+@jwt_required()
 def item_id(itemname):
     itemname=itemname
-    print(OPENHAB_URL)
     info = requests.get('http://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+itemname+'?recursive=true')
-
-    return info.json(), HTTP_200_OK
+    if info.ok:
+        return info.json(), HTTP_200_OK
+    elif info.status_code == 404:
+        response = make_response(jsonify({
+                'error': info.json()['error']['message']
+            }))
+        response.status_code=info.status_code
+        return response
 
 
 @devices.post('/getlastmeasurements')
@@ -66,8 +74,9 @@ def last_measurement():
 
                 if id:
                     item = create_item_models('item00'+str(id))
-                    query = item.query.filter(item.TIME >= start_time, item.TIME <= end_time).all()
-                    response = make_response(jsonify(lastMeasurements=[i.serialize for i in query]))
+                    #query = item.query.filter(item.TIME >= start_time, item.TIME <= end_time).all()
+                    query = item.query.with_entities(func.date_format(item.TIME, '%Y-%m-%d %H'), func.avg(item.VALUE)).filter(item.TIME >= start_time, item.TIME <= end_time).group_by(func.date_format(item.TIME, '%Y-%m-%d %H')).all()
+                    response = make_response(jsonify(lastMeasurements=[tuple(row) for row in query]))
                     response.status_code=HTTP_200_OK
                 else:
                     response = make_response(jsonify({'error': 'The measurement was not found'}))

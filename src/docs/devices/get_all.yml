@@ -6,11 +6,11 @@ tags:
 parameters:
   - in: header
     name: Authorization
-    required: false
+    required: true
 
 responses:
   200:
     description: Devices info is retrieved
 
-  400:
-    description: Fails to get items due to internal error
+  503:
+    description: Service not available
