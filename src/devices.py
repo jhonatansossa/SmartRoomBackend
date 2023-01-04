@@ -17,13 +17,15 @@ energy_types = {'active_import_energy': 'ACTIVEIMPORTID', 'active_export_energy'
 
 OPENHAB_URL=os.environ.get("OPENHAB_URL")
 OPENHAB_PORT=os.environ.get("OPENHAB_PORT")
+username=os.environ.get("USERNAME")
+password=os.environ.get("PASSWORD")
 
 
 @devices.get('/items')
 @swag_from('./docs/devices/get_all.yml')
 @jwt_required()
 def get_all():
-    items = requests.get('http://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false')
+    items = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false', auth=(username, password))
     if items.ok:
         return items.json(), HTTP_200_OK
     else:
@@ -38,7 +40,7 @@ def get_all():
 @jwt_required()
 def item_id(itemname):
     itemname=itemname
-    info = requests.get('http://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+itemname+'?recursive=true')
+    info = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+itemname+'?recursive=true', auth=(username, password))
     if info.ok:
         return info.json(), HTTP_200_OK
     elif info.status_code == 404:
