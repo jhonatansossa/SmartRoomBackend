@@ -4,6 +4,10 @@ from src.database import Relations, Names, db, create_item_models
 from src.database import User
 from sqlalchemy import func
 from flasgger import swag_from
+import requests 
+import os
+from flask_jwt_extended import jwt_required
+
 
 devices = Blueprint("devices", __name__, url_prefix="/api/v1/devices")
 
@@ -11,19 +15,45 @@ energy_types = {'active_import_energy': 'ACTIVEIMPORTID', 'active_export_energy'
                 'reactive_import_energy': 'REACTIVEIMPORTID', 'reactive_export_energy': 'REACTIVEEXPORTID',  
                 'apparent_import_energy': 'APPARENTIMPORTID', 'apparent_export_energy': 'APPARENTEXPORTID'}
 
-@devices.get('/alldevices')
+OPENHAB_URL=os.environ.get("OPENHAB_URL")
+OPENHAB_PORT=os.environ.get("OPENHAB_PORT")
+username=os.environ.get("USERNAME")
+password=os.environ.get("PASSWORD")
+
+
+@devices.get('/items')
 @swag_from('./docs/devices/get_all.yml')
+@jwt_required()
 def get_all():
+    items = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false', auth=(username, password))
+    if items.ok:
+        return items.json(), HTTP_200_OK
+    else:
+        response = make_response(jsonify({
+                'error': 'The service is not available'
+            }))
+        response.status_code=HTTP_503_SERVICE_UNAVAILABLE
+        return response
 
-    name=Names.query.all()
 
-    return jsonify(devices=[i.serialize for i in name]), HTTP_200_OK
+@devices.get("/items/<itemname>")
+@jwt_required()
+def item_id(itemname):
+    itemname=itemname
+    info = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+itemname+'?recursive=true', auth=(username, password))
+    if info.ok:
+        return info.json(), HTTP_200_OK
+    elif info.status_code == 404:
+        response = make_response(jsonify({
+                'error': info.json()['error']['message']
+            }))
+        response.status_code=info.status_code
+        return response
 
-#select time from item0001 where time = (select max(time) from item0001 where time <= '2021-12-01 02:47:00');
-#select * from item00+
 
 @devices.post('/getlastmeasurements')
 @swag_from('./docs/devices/last_measurement.yml')
+@jwt_required()
 def last_measurement():
     ID=request.json.get('id', '')
     measurement=request.json.get('measurement', '')
@@ -46,12 +76,16 @@ def last_measurement():
 
                 if id:
                     item = create_item_models('item00'+str(id))
-                    query = item.query.filter(item.TIME >= start_time, item.TIME <= end_time).all()
-                    response = make_response(jsonify(lastMeasurements=[i.serialize for i in query]))
+                    #query = item.query.filter(item.TIME >= start_time, item.TIME <= end_time).all()
+                    query = item.query.with_entities(func.date_format(item.TIME, '%Y-%m-%d %H'), func.avg(item.VALUE)).filter(item.TIME >= start_time, item.TIME <= end_time).group_by(func.date_format(item.TIME, '%Y-%m-%d %H')).all()
+                    response = make_response(jsonify(lastMeasurements=[tuple(row) for row in query]))
                     response.status_code=HTTP_200_OK
                 else:
                     response = make_response(jsonify({'error': 'The measurement was not found'}))
                     response.status_code=HTTP_404_NOT_FOUND
+            else:
+                response = make_response(jsonify({'error': 'That measurement does not exist'}))
+                response.status_code=HTTP_404_NOT_FOUND
         else: 
             response = make_response(jsonify({'error': 'Wrong id'}))
             response.status_code = HTTP_400_BAD_REQUEST

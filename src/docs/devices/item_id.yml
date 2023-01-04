@@ -1,0 +1,18 @@
+GET information item status
+
+Use it as /api/v1/devices/items/ZWaveSerialController_OOFBytesReceived
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: Item status is retrieved
+
+  400:
+    description: Item does not exist
