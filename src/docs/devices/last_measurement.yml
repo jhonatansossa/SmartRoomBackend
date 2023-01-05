@@ -6,7 +6,7 @@ parameters:
   - in: header
     name: Authorization
     required: true
-    name: body
+  - name: body
     description: The body should contain the user desired measurement data
     in: body
     required: true
