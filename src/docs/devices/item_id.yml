@@ -8,6 +8,9 @@ parameters:
   - in: header
     name: Authorization
     required: true
+    in: path
+    name: itemname
+    required: true
 
 responses:
   200:
