@@ -3,7 +3,10 @@ Get data from each device
 tags:
   - Devices
 parameters:
-  - name: body
+  - in: header
+    name: Authorization
+    required: true
+    name: body
     description: The body should contain the user desired measurement data
     in: body
     required: true
