@@ -23,7 +23,7 @@ password=os.environ.get("PASSWORD")
 
 @devices.get('/items')
 @jwt_required()
-@swag_from('src/docs/devices/get_all.yml')
+@swag_from('./docs/devices/get_all.yml')
 def get_all():
     items = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false', auth=(username, password))
     if items.ok:
@@ -37,8 +37,8 @@ def get_all():
 
 
 @devices.get("/items/<itemname>")
-@swag_from('./docs/devices/item_id.yml')
 @jwt_required()
+@swag_from('./docs/devices/item_id.yml')
 def item_id(itemname):
     itemname=itemname
     info = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+itemname+'?recursive=true', auth=(username, password))
@@ -53,8 +53,8 @@ def item_id(itemname):
 
 
 @devices.post('/getlastmeasurements')
-@swag_from('./docs/devices/last_measurement.yml')
 @jwt_required()
+@swag_from('./docs/devices/last_measurement.yml')
 def last_measurement():
     ID=request.json.get('id', '')
     measurement=request.json.get('measurement', '')
