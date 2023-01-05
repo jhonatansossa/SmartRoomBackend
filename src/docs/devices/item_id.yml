@@ -8,7 +8,7 @@ parameters:
   - in: header
     name: Authorization
     required: true
-    in: path
+  - in: path
     name: itemname
     required: true
 
