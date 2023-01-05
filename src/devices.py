@@ -23,7 +23,7 @@ password=os.environ.get("PASSWORD")
 
 @devices.get('/items')
 @jwt_required()
-@swag_from('/docs/devices/get_all.yml')
+@swag_from('src/docs/devices/get_all.yml')
 def get_all():
     items = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false', auth=(username, password))
     if items.ok:
