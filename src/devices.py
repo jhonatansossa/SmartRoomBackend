@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, make_response
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED
 from src.database import Relations, Names, db, create_item_models
 from src.database import User
 from sqlalchemy import func
@@ -50,6 +50,27 @@ def item_id(itemname):
             }))
         response.status_code=info.status_code
         return response
+
+@devices.post("/items/<itemname>/state")
+@jwt_required()
+@swag_from('./docs/devices/change_state.yml')
+def change_state(itemname):
+    headers = {'Content-type': 'text/plain'}
+    state=request.json.get('state', '')
+    itemname=itemname
+
+    print(itemname, state)
+    url = f"https://home.myopenhab.org/rest/items/{itemname}/state"
+    response = requests.put(url, data=state, headers=headers, auth=(username, password))
+
+    if response.ok:
+        return response.content, HTTP_202_ACCEPTED
+    else:
+        ans = make_response(jsonify({
+                'error': response.json()['error']['message']
+            }))
+        ans.status_code=response.status_code
+        return ans
 
 
 @devices.post('/getlastmeasurements')
