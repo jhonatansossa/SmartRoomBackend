@@ -1,0 +1,35 @@
+Update the state of an item
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+  - in: path
+    name: itemname
+    required: true
+  - name: Request body
+    description: valid item state (e.g. ON, OFF)
+    in: body
+    required: true
+    schema:
+      type: object
+      required:
+        - "state"
+      properties:
+        state:
+          type: "string"
+          example: "ON"
+  
+
+responses:
+  202:
+    description: Accepted
+
+  400:
+    description: State error
+
+  404:
+    description: Item does not exist
