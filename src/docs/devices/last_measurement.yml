@@ -13,17 +13,17 @@ parameters:
     schema:
       type: object
       required:
-        - "id"
+        - "thing_id"
         - "measurement"
         - "start_time"
         - "end_time"
       properties:
-        id:
+        thing_id:
           type: "integer"
           example: 30
         measurement:
           type: "string"
-          example: "active_import_energy"
+          example: 'voltage'
         start_time:
           type: "string"
           example: "2021-12-01 02:26:20"
@@ -38,4 +38,4 @@ responses:
     description: The measure was not found
 
   400:
-    description: Bad request (Wrond id or the start time is greater than end time)
+    description: Bad request (Wrong id/measurement or the start time is greater than end time)

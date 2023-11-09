@@ -1,5 +1,4 @@
-GET information item status
-Use it as /api/v1/devices/items/ZWaveSerialController_OOFBytesReceived
+GET information item status given an id
 ---
 tags:
   - Devices
@@ -9,7 +8,7 @@ parameters:
     name: Authorization
     required: true
   - in: path
-    name: itemname
+    name: itemid
     required: true
 
 responses:

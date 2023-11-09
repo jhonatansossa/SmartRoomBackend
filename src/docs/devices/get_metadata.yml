@@ -1,0 +1,17 @@
+GET metadata from all devices, populates the Device_Item_Measurement table with thing, item, and measurement names and thing & item id's
+In order for this to work, Item labels must be written like 'thingid_itemid_thingname_measurement'. Example - '01_01_oven_voltage'
+---
+tags:
+  - Metadata
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: Devices metadata is retrieved
+
+  503:
+    description: Service not available

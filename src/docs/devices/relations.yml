@@ -1,0 +1,16 @@
+GET all relation data from things, items and measurements (id's + names)
+---
+tags:
+  - Metadata
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: Device relations are retrieved
+
+  503:
+    description: Service not available
