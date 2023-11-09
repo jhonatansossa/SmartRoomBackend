@@ -25,12 +25,10 @@ DROP TABLE IF EXISTS `thing_item_measurement`;
 CREATE TABLE `thing_item_measurement` (
   `thing_id` int NOT NULL,
   `item_id` int NOT NULL,
-  `thing_name` varchar(500) NOT NULL DEFAULT '',
-  `item_name` varchar(500) NOT NULL DEFAULT '',
-  `measurement_name` varchar(500) NOT NULL DEFAULT '',
-  PRIMARY KEY (`thing_id`,`item_id`),
-  UNIQUE KEY `thing_name` (`thing_name`),
-  UNIQUE KEY `item_name` (`item_name`)
+  `thing_name` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `item_name` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `measurement_name` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  PRIMARY KEY (`thing_id`,`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -82,4 +80,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-11-09 13:51:15
+-- Dump completed on 2023-11-09 18:24:58
