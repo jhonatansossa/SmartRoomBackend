@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, make_response
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED, HTTP_503_SERVICE_UNAVAILABLE
-from src.database import db, DeviceItemMeasurement
+from src.database import db, ThingItemMeasurement
 from sqlalchemy import func
 from flasgger import swag_from
 import requests 
@@ -30,7 +30,7 @@ def get_metadata():
     
     items_converted = items.json()
 
-    db.session.query(DeviceItemMeasurement).delete()
+    db.session.query(ThingItemMeasurement).delete()
     db.session.commit()
 
     for item in items_converted:
@@ -42,7 +42,7 @@ def get_metadata():
         item_name = item['name']
         measurement_name = label[3]
 
-        entry = DeviceItemMeasurement(thing_id = thing_id, item_id = item_id, thing_name = thing_name, item_name = item_name, measurement_name = measurement_name)
+        entry = ThingItemMeasurement(thing_id = thing_id, item_id = item_id, thing_name = thing_name, item_name = item_name, measurement_name = measurement_name)
         db.session.add(entry)
         db.session.commit()
 
@@ -55,7 +55,7 @@ def get_metadata():
 @jwt_required()
 @swag_from('./docs/devices/relations.yml')
 def get_all_relations():
-    result = DeviceItemMeasurement.query.all()
+    result = ThingItemMeasurement.query.all()
 
     if result is None:
         response = make_response(jsonify({
@@ -76,7 +76,7 @@ def get_all_relations():
 @jwt_required()
 @swag_from('./docs/devices/relations_id.yml')
 def get_thing_relations(thing_id):
-    result = DeviceItemMeasurement.query.filter_by(thing_id = thing_id).all()
+    result = ThingItemMeasurement.query.filter_by(thing_id = thing_id).all()
 
     if result is None:
         response = make_response(jsonify({
@@ -112,7 +112,7 @@ def get_all():
 @jwt_required()
 @swag_from('./docs/devices/item_id.yml')
 def item_id(itemid):
-    item = DeviceItemMeasurement.query.filter_by(id_item = itemid).first()
+    item = ThingItemMeasurement.query.filter_by(id_item = itemid).first()
     if item is None:
         response = make_response(jsonify({
         'error': 'Item not found'
@@ -170,7 +170,7 @@ def last_measurement():
         response.status_code=HTTP_400_BAD_REQUEST
         return response
     
-    entry = DeviceItemMeasurement.query.filter_by(id_thing = id_thing, measurement_name = measurement).first()
+    entry = ThingItemMeasurement.query.filter_by(id_thing = id_thing, measurement_name = measurement).first()
 
     if entry is None:
         response = make_response(jsonify({

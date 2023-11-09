@@ -18,7 +18,7 @@ class User(db.Model):
     def __repr__(self) -> str:
         return 'User >>> {self.username}'
 
-class DeviceItemMeasurement(db.Model):
+class ThingItemMeasurement(db.Model):
     thing_id = db.Column(db.Integer, primary_key=True)
     item_id = db.Column(db.Integer, primary_key=True)
     thing_name = db.Column(db.String(500), nullable=False)
