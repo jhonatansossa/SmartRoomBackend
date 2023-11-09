@@ -120,11 +120,9 @@ def item_id(itemid):
         response.status_code=HTTP_404_NOT_FOUND
         return response
     
-    info = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+item.name+'?recursive=true', auth=(username, password))
+    info = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+item.item_name+'?recursive=true', auth=(username, password))
 
     if info.ok:
-        info = info.json()
-        info['id'] = item.name
         return jsonify(info), HTTP_200_OK
     
     response = make_response(jsonify({
