@@ -2,7 +2,6 @@ from flask import Flask
 import os
 from datetime import timedelta  # nueva libreria para tiempo
 from src.auth import auth
-from src.bookmarks import bookmarks
 from src.database import db
 from src.devices import devices
 from flask_jwt_extended import JWTManager
@@ -44,7 +43,6 @@ def create_app(test_config=None):
     JWTManager(app)
 
     app.register_blueprint(auth)
-    app.register_blueprint(bookmarks)
     app.register_blueprint(devices)
 
     Swagger(app, config=swagger_config,

@@ -1,4 +1,5 @@
-GET information from all items
+GET all relation data
+Returns - (id's + names of things, items and measurements)
 ---
 tags:
   - Devices
@@ -10,7 +11,7 @@ parameters:
 
 responses:
   200:
-    description: Devices info is retrieved
+    description: Device relations are retrieved
 
   503:
     description: Service not available
