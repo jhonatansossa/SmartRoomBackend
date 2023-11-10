@@ -8,10 +8,7 @@ parameters:
     name: Authorization
     required: true
   - in: path
-    name: thingid
-    required: true
-  - in: path
-    name: itemid
+    name: itemname
     required: true
 
 responses:

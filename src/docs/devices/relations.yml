@@ -1,7 +1,8 @@
-GET all relation data from things, items and measurements (id's + names)
+GET all relation data
+Returns - (id's + names of things, items and measurements)
 ---
 tags:
-  - Metadata
+  - Devices
 
 parameters:
   - in: header

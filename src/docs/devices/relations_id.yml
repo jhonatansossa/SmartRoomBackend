@@ -1,11 +1,15 @@
-GET all relation data from things, items and measurements (id's + names) by id
+GET all relation data from a thing 
+Returns - (id's + names of things, items and measurements)
 ---
 tags:
-  - Metadata
+  - Devices
 
 parameters:
   - in: header
     name: Authorization
+    required: true
+  - in: path
+    name: thingid
     required: true
 
 responses:

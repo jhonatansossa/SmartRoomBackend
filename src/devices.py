@@ -16,7 +16,7 @@ OPENHAB_PORT=os.environ.get("OPENHAB_PORT")
 username=os.environ.get("USERNAME")
 password=os.environ.get("PASSWORD")
 
-@devices.get('/loadmetadata')
+@devices.post('/loadmetadata')
 @jwt_required()
 @swag_from('./docs/devices/get_metadata.yml')
 def get_metadata():
@@ -35,12 +35,29 @@ def get_metadata():
 
     for item in items_converted:
         label = item['label'].split('_')
+        label_length = len(label)
 
-        thing_id = label[0]
-        item_id = label[1]
-        thing_name = label[0] + "_" + label[2]
+        if item['label'] == 'Total_Energy_Consumption':
+            entry = ThingItemMeasurement(thing_id = 1000, item_id = 1, thing_name = 'Total Energy Consumption', item_name = 'Total_Energy_Consumption_xx_01', measurement_name = 'Total Energy Consumption')
+            db.session.add(entry)
+            db.session.commit()
+            continue
+
+        if label_length == 6:
+            thing_name = label[4] + " " + label[0] + " " + label[1]
+            measurement_name = label[2] + " " + label[3]
+            thing_id = label[4]
+        elif label_length == 5:
+            thing_name = label[3] + " " + label[0] + " " + label[1]
+            measurement_name = label[2]
+            thing_id = label[3]
+        else:
+            thing_name = label[2] + " " + label[0]
+            measurement_name = label[1]
+            thing_id = label[2]
+
+        item_id = label[-1]
         item_name = item['name']
-        measurement_name = label[3]
 
         entry = ThingItemMeasurement(thing_id = thing_id, item_id = item_id, thing_name = thing_name, item_name = item_name, measurement_name = measurement_name)
         db.session.add(entry)
@@ -66,8 +83,8 @@ def get_all_relations():
 
     output = []
 
-    for thing_id, item_id, device_name, item_name, measurement_name in result:
-        output.append({'thing_id': thing_id, 'item_id': item_id, 'device_name': device_name, 'item_name': item_name, 'measurement_name': measurement_name})
+    for row in result:
+        output.append({'thing_id': row.thing_id, 'item_id': row.item_id, 'thing_name': row.thing_name, 'item_name': row.item_name, 'measurement_name': row.measurement_name})
     
     return jsonify(output), HTTP_200_OK
 
@@ -75,8 +92,8 @@ def get_all_relations():
 @devices.get("/relations/<thingid>")
 @jwt_required()
 @swag_from('./docs/devices/relations_id.yml')
-def get_thing_relations(thing_id):
-    result = ThingItemMeasurement.query.filter_by(thing_id = thing_id).all()
+def get_thing_relations(thingid):
+    result = ThingItemMeasurement.query.filter_by(thing_id = thingid).all()
 
     if result is None:
         response = make_response(jsonify({
@@ -87,8 +104,8 @@ def get_thing_relations(thing_id):
 
     output = []
 
-    for thing_id, item_id, device_name, item_name, measurement_name in result:
-        output.append({'thing_id': thing_id, 'item_id': item_id, 'device_name': device_name, 'item_name': item_name, 'measurement_name': measurement_name})
+    for row in result:
+        output.append({'thing_id': row.thing_id, 'item_id': row.item_id, 'thing_name': row.thing_name, 'item_name': row.item_name, 'measurement_name': row.measurement_name})
     
     return jsonify(output), HTTP_200_OK
 
@@ -99,7 +116,7 @@ def get_thing_relations(thing_id):
 def get_all():
     items = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false&fields=name,state,label,editable', auth=(username, password))
     if items.ok:
-        return jsonify(items), HTTP_200_OK
+        return items.json(), HTTP_200_OK
     else:
         response = make_response(jsonify({
                 'error': 'The service is not available'
@@ -108,11 +125,11 @@ def get_all():
         return response
 
 
-@devices.get("/items/<itemid>")
+@devices.get("/items/<thingid>/<itemid>")
 @jwt_required()
 @swag_from('./docs/devices/item_id.yml')
-def item_id(itemid):
-    item = ThingItemMeasurement.query.filter_by(id_item = itemid).first()
+def thing_item_id(thingid, itemid):
+    item = ThingItemMeasurement.query.filter_by(thing_id = thingid, item_id = itemid).first()
     if item is None:
         response = make_response(jsonify({
         'error': 'Item not found'
@@ -123,7 +140,7 @@ def item_id(itemid):
     info = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+item.item_name+'?recursive=true', auth=(username, password))
 
     if info.ok:
-        return jsonify(info), HTTP_200_OK
+        return info.json(), HTTP_200_OK
     
     response = make_response(jsonify({
             'error': info.json()['error']['message']
@@ -131,6 +148,28 @@ def item_id(itemid):
     response.status_code=info.status_code
     return response
 
+@devices.get("/items/<itemname>")
+@jwt_required()
+@swag_from('./docs/devices/get_item.yml')
+def item_id(itemname):
+    item = ThingItemMeasurement.query.filter_by(item_name = itemname).first()
+    if item is None:
+        response = make_response(jsonify({
+        'error': 'Item not found'
+        }))
+        response.status_code=HTTP_404_NOT_FOUND
+        return response
+    
+    info = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/'+item.item_name+'?recursive=true', auth=(username, password))
+
+    if info.ok:
+        return info.json(), HTTP_200_OK
+    
+    response = make_response(jsonify({
+            'error': info.json()['error']['message']
+        }))
+    response.status_code=info.status_code
+    return response
 
 @devices.post("/items/<itemname>/state")
 @jwt_required()
@@ -170,7 +209,7 @@ def last_measurement():
         response.status_code=HTTP_400_BAD_REQUEST
         return response
     
-    entry = ThingItemMeasurement.query.filter_by(id_thing = id_thing, measurement_name = measurement).first()
+    entry = ThingItemMeasurement.query.filter_by(thing_id = id_thing, measurement_name = measurement).first()
 
     if entry is None:
         response = make_response(jsonify({
