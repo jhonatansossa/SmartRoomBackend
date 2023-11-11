@@ -1,1 +1,1 @@
-web: gunicorn src.runner:application
+web: gunicorn workspace.runner:application

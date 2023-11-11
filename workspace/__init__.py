@@ -1,13 +1,13 @@
 from flask import Flask
 import os
 from datetime import timedelta  # nueva libreria para tiempo
-from src.auth import auth
-from src.database import db
-from src.devices import devices
+from workspace.auth import auth
+from workspace.database import db
+from workspace.devices import devices
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flasgger import Swagger, swag_from
-from src.config.swagger import template,swagger_config
+from workspace.config.swagger import template,swagger_config
 
 #Application Factory
 def create_app(test_config=None):
