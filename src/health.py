@@ -1,5 +1,5 @@
 from flask import Blueprint
-from workspace.constants.http_status_codes import HTTP_200_OK
+from src.constants.http_status_codes import HTTP_200_OK
 
 health = Blueprint("health", __name__, url_prefix="/api/v1/health")
 
