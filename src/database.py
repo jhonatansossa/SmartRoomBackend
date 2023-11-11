@@ -22,11 +22,12 @@ class ThingItemMeasurement(db.Model):
     thing_id = db.Column(db.Integer, primary_key=True)
     item_id = db.Column(db.Integer, primary_key=True)
     thing_name = db.Column(db.String(500), nullable=False)
+    item_type = db.Column(db.String(500), nullable=False)
     item_name = db.Column(db.String(500), nullable=False)
     measurement_name = db.Column(db.String(500), nullable=False)
 
     def __repr__(self):
-        return 'Thing Id: {self.thing_id}, Item Id: {self.item_id}, Thing: {self.thing.name}, Item: {self.item.name}, Measurement: {self.measurement.name}'
+        return f"Thing Id: {self.thing_id}, Item Id: {self.item_id}, Thing: {self.thing_name}, Item Type: {self.item_type}, Item Name: {self.item_name}, Measurement: {self.measurement_name}"
     
     @property
     def serialize(self):
@@ -35,6 +36,7 @@ class ThingItemMeasurement(db.Model):
             'thing_id': self.thing_id,
             'item_id': self.item_id,
             'device_name': self.device_name,
+            'item_type': self.item_type,
             'item_name': self.item_name,
             'measurement_name': self.measurement_name
        }
