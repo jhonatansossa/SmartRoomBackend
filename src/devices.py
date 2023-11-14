@@ -90,7 +90,7 @@ def get_all_relations():
     output = []
 
     for row in result:
-        output.append({'thing_id': row.thing_id, 'item_id': row.item_id, 'thing_name': row.thing_name, 'item_name': row.item_name, 'measurement_name': row.measurement_name})
+        output.append({'thing_id': row.thing_id, 'item_id': row.item_id, 'thing_name': row.thing_name, 'item_name': row.item_name, 'item_type': row.item_type, 'measurement_name': row.measurement_name})
     
     return jsonify(output), HTTP_200_OK
 
@@ -120,7 +120,7 @@ def get_thing_relations(thingid):
 @jwt_required()
 @swag_from('./docs/devices/get_all.yml')
 def get_all():
-    items = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false&fields=name,state,label,editable', auth=(username, password))
+    items = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items?recursive=false&fields=name,state,label,editable,type', auth=(username, password))
     if items.ok:
         return items.json(), HTTP_200_OK
     else:
