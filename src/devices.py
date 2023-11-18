@@ -263,7 +263,7 @@ def last_measurement():
 
 @devices.get('/energy_consumption')
 @jwt_required()
-@swag_from('./docs/devices/energy_consumption.yml')  # Add appropriate Swagger documentation
+@swag_from('./docs/devices/energy_consumption.yml')  
 def get_energy_consumption():
    
     total_energy = 0
@@ -278,12 +278,12 @@ def get_energy_consumption():
         
         if response.ok:
             try:
-                # Access the specific value from the dictionary
+                
                 energy_value = float(response.json()['state'])
                 total_energy += energy_value
                 devices_count += 1
             except (ValueError, KeyError):
-                pass  # Ignore devices with non-numeric or missing 'state' key
+                pass  
 
     if devices_count == 0:
         response = make_response(jsonify({
@@ -298,4 +298,4 @@ def get_energy_consumption():
         'total_energy': total_energy,
         'average_energy': average_energy,
         'devices_count': devices_count
-    }), HTTP_200_OK
+    }), 
