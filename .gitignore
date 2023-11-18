@@ -7,3 +7,4 @@ instance/
 smart_room_backend.egg-info/
 dist/
 build/
+.env
