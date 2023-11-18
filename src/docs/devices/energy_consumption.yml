@@ -1,0 +1,20 @@
+Retrieve total and average energy consumption of devices.
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: DevicesEnergy consumption info is retrieved
+
+  503:
+    description: Service not available
+
+
+
+
