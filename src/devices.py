@@ -259,3 +259,47 @@ def last_measurement():
         }))
     ans.status_code=response.status_code
     return ans
+
+@devices.get('/energy_consumption')
+@jwt_required()
+@swag_from('./docs/devices/energy_consumption.yml')  
+def get_energy_consumption():
+    total_energy = 0
+    devices_count = 0
+    switch_count = 0
+
+    switches = ThingItemMeasurement.query.filter_by(item_type='Switch').filter(~ThingItemMeasurement.item_name.ilike('%Sensor%')).with_entities(ThingItemMeasurement.item_name).all()
+    switch_count = len(switches)
+
+    response = requests.get('https://' + OPENHAB_URL + ':' + OPENHAB_PORT + '/rest/items?recursive=false&fields=name,state', auth=(username, password))
+    
+    for switch in switches:
+        item_name = switch.item_name
+
+        state = list(filter(lambda x:(x["name"]==item_name and x["state"]=="ON"), response.json()))
+
+        if len(state) != 0 and state[0]["state"] == "ON":
+            devices_count += 1
+
+    devices = ThingItemMeasurement.query.filter_by(measurement_name='meterwatts').with_entities(ThingItemMeasurement.item_name).all()
+
+    for device in devices:
+        item_name = device.item_name
+
+        watts = list(filter(lambda x:(x["name"]==item_name), response.json()))
+        
+        if len(watts) != 0:
+            energy_value = float(watts[0]['state'])
+            total_energy += energy_value
+
+    if devices_count != 0:
+        average_energy = total_energy / devices_count
+    else :
+        average_energy=0
+        
+    return jsonify({
+        'total_energy': total_energy,
+        'average_energy': average_energy,
+        'devices_count': devices_count,
+        'switch_count': switch_count
+    }), HTTP_200_OK
