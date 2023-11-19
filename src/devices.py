@@ -268,38 +268,29 @@ def get_energy_consumption():
     devices_count = 0
     switch_count = 0
 
-    switches = ThingItemMeasurement.query.filter_by(item_type='Switch').filter(~ThingItemMeasurement.item_name.ilike('%Sensor%')).all()
+    switches = ThingItemMeasurement.query.filter_by(item_type='Switch').filter(~ThingItemMeasurement.item_name.ilike('%Sensor%')).with_entities(ThingItemMeasurement.item_name).all()
     switch_count = len(switches)
 
+    response = requests.get('https://' + OPENHAB_URL + ':' + OPENHAB_PORT + '/rest/items?recursive=false&fields=name,state', auth=(username, password))
+    
     for switch in switches:
         item_name = switch.item_name
 
-        response = requests.get('https://' + OPENHAB_URL + ':' + OPENHAB_PORT + '/rest/items/' + item_name+'?state=on', auth=(username, password))
-        
-        if response.ok:
-            try:
-                state = response.json().get('state')
-                
-                if state == "ON":
-                    devices_count += 1
-                
-            except (ValueError, KeyError):
-                pass
-    devices = ThingItemMeasurement.query.filter_by(measurement_name='meterwatts').all()
+        state = list(filter(lambda x:(x["name"]==item_name and x["state"]=="ON"), response.json()))
+
+        if len(state) != 0 and state[0]["state"] == "ON":
+            devices_count += 1
+
+    devices = ThingItemMeasurement.query.filter_by(measurement_name='meterwatts').with_entities(ThingItemMeasurement.item_name).all()
 
     for device in devices:
         item_name = device.item_name
 
-        response = requests.get('https://' + OPENHAB_URL + ':' + OPENHAB_PORT + '/rest/items/' + item_name+'?state=on', auth=(username, password))
+        watts = list(filter(lambda x:(x["name"]==item_name), response.json()))
         
-        if response.ok:
-            try:
-                
-                energy_value = float(response.json()['state'])
-                total_energy += energy_value
-                        
-            except (ValueError, KeyError):
-                pass
+        if len(watts) != 0:
+            energy_value = float(watts[0]['state'])
+            total_energy += energy_value
 
     if devices_count != 0:
         average_energy = total_energy / devices_count
