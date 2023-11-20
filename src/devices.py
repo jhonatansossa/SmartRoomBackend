@@ -267,12 +267,26 @@ def get_energy_consumption():
     total_energy = 0
     devices_count = 0
     switch_count = 0
+    try:
+        switches = ThingItemMeasurement.query.filter_by(item_type='Switch').filter(~ThingItemMeasurement.item_name.ilike('%Sensor%')).with_entities(ThingItemMeasurement.item_name).all()
+    except:
+        response = make_response(jsonify({
+                'error': 'The service is not available'
+            }))
+        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return response
 
-    switches = ThingItemMeasurement.query.filter_by(item_type='Switch').filter(~ThingItemMeasurement.item_name.ilike('%Sensor%')).with_entities(ThingItemMeasurement.item_name).all()
     switch_count = len(switches)
 
     response = requests.get('https://' + OPENHAB_URL + ':' + OPENHAB_PORT + '/rest/items?recursive=false&fields=name,state', auth=(username, password))
     
+    if not response.ok:
+        ans = make_response(jsonify({
+                'error': response.json()['error']['message']
+            }))
+        ans.status_code=response.status_code
+        return ans
+
     for switch in switches:
         item_name = switch.item_name
 
@@ -280,8 +294,14 @@ def get_energy_consumption():
 
         if len(state) != 0 and state[0]["state"] == "ON":
             devices_count += 1
-
-    devices = ThingItemMeasurement.query.filter_by(measurement_name='meterwatts').with_entities(ThingItemMeasurement.item_name).all()
+    try:
+        devices = ThingItemMeasurement.query.filter_by(measurement_name='meterwatts').with_entities(ThingItemMeasurement.item_name).all()
+    except:
+        response = make_response(jsonify({
+                'error': 'The service is not available'
+            }))
+        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return response
 
     for device in devices:
         item_name = device.item_name
