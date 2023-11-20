@@ -1,4 +1,4 @@
-GET information from all items
+Retrieve total and average energy consumption of devices.
 ---
 tags:
   - Devices
@@ -10,7 +10,7 @@ parameters:
 
 responses:
   200:
-    description: Devices info is retrieved
+    description: Devices Energy consumption info is retrieved
 
   503:
     description: Service not available

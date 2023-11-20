@@ -1,0 +1,20 @@
+GET all relation data from a thing 
+Returns - (id's + names of things, items and measurements)
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+  - in: path
+    name: thingid
+    required: true
+
+responses:
+  200:
+    description: Device relations are retrieved
+
+  503:
+    description: Service not available

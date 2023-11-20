@@ -8,7 +8,11 @@ parameters:
     name: Authorization
     required: true
   - in: path
-    name: itemname
+    name: thingid
+    required: true
+  - in: path
+    name: itemid
+    required: true
     required: true
   - name: Request body
     description: valid item state (e.g. ON, OFF)
