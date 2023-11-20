@@ -1,4 +1,4 @@
-GET metadata from all devices, populating the device_item_measurement table with thing, item, and measurement names and thing & item id's
+GET metadata from all devices, populating the thing_item_measurement table with thing, item, and measurement names and thing & item id's
 In order for this to work, item labels must be written like 'thingname_measurement_thingid_itemid'. Example - 'oven_voltage_01_01'
 ---
 tags:
