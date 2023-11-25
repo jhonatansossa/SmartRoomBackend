@@ -1,0 +1,18 @@
+GET last room status
+Returns id, status and time it was created
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: Room status is retrieved
+  404:
+    description: Room status is not found
+  503:
+    description: Service is unavailable

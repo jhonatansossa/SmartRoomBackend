@@ -1,0 +1,28 @@
+POST a new room status
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+  - name: body
+    description: The body should contain the user desired measurement data
+    in: body
+    required: true
+    schema:
+      type: object
+      required:
+        - "status"
+      properties:
+        status:
+          type: "string"
+          example: "EMPTY"
+
+responses:
+  200:
+    description: Room status is set
+
+  503:
+    description: Entry was unsuccessful

@@ -16,6 +16,31 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `room_status`
+--
+
+DROP TABLE IF EXISTS `room_status`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `room_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `status` varchar(9) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '',
+  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `room_status`
+--
+
+LOCK TABLES `room_status` WRITE;
+/*!40000 ALTER TABLE `room_status` DISABLE KEYS */;
+INSERT INTO `room_status` VALUES (1,'EMPTY','2023-11-24 11:16:37'),(2,'NOT EMPTY','2023-11-24 11:17:40'),(3,'EMPTY','2023-11-25 19:40:43'),(4,'EMPTY','2023-11-25 14:45:36'),(5,'EMPTY','2023-11-25 14:45:36'),(6,'EMPTY','2023-11-25 14:45:36'),(7,'EMPTY','2023-11-25 19:48:38'),(8,'EMPTY','2023-11-25 19:48:43'),(9,'EMPTY','2023-11-25 19:48:46'),(10,'EMPTY','2023-11-25 19:49:01'),(11,'EMPTY','2023-11-25 19:56:06');
+/*!40000 ALTER TABLE `room_status` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `thing_item_measurement`
 --
 
@@ -38,6 +63,7 @@ CREATE TABLE `thing_item_measurement` (
 
 LOCK TABLES `thing_item_measurement` WRITE;
 /*!40000 ALTER TABLE `thing_item_measurement` DISABLE KEYS */;
+INSERT INTO `thing_item_measurement` VALUES (1,1,'01 Humidity Sensor','Humidity_Sensor_Humidity_01_01','Humidity'),(2,1,'02 Pressure Sensor','Pressure_Sensor_Pressure_02_01','Pressure'),(3,1,'03 Temperature Sensor','Temperature_Sensor_Temperature_03_01','Temperature'),(6,1,'06 WaterLeak Sensor','WaterLeak_Sensor_waterleakage_06_01','waterleakage'),(7,1,'07 GAS Sensor','Smart_Metering_switchbinary_07_01','switch binary'),(7,2,'07 GAS Sensor','Smart_Metering_meterwatts_07_02','meterwatts'),(8,1,'08 TV1','Smart_Metering_switchbinary_08_01','switchbinary'),(8,2,'08 TV1','Smart_Metering_meterwatts_08_02','meterwatts'),(9,1,'09 TV2','Smart_Metering_switchbinary_09_01','switchbinary'),(9,2,'09 TV2','Smart_Metering_meterwatts_09_02','meterwatts'),(10,1,'10 Living Lamps','Smart_Metering_switchbinary_10_01','switchbinary'),(10,2,'10 Living Lamps','Smart_Metering_meterwatts_10_02','meterwatts'),(11,1,'11 Window Sensor','Window_Sensor_sensordoor_11_01','sensordoor'),(12,1,'12 Door Sensor','Door_Sensor_sensordoor_12_01','sensordoor'),(13,1,'13 Motion Sensor','Motion_Sensor_temperature_13_01','temperature'),(13,2,'13 Motion Sensor','Motion_Sensor_luminance_13_02','luminance'),(13,3,'13 Motion Sensor','Motion_Sensor_alarmotion_13_03','alarmotion'),(14,1,'14 Motion Sensor','Motion_Sensor_alarmotion_14_01','alarmotion'),(15,1,'15 Motion Sensor','Motion_Sensor_alarmotion_15_01','alarmotion'),(16,1,'16 Motion Sensor','Motion_Sensor_alarmotion_16_01','alarmotion'),(17,1,'17 Motion Sensor','Motion_Sensor_alarmotion_17_01','alarmotion'),(18,1,'18 Energy Meter','Energy_Meter_metervoltage_18_01','metervoltage'),(19,1,'19 Color LED','Color_LED_Lamp_color_19_01','Lamp color'),(1000,1,'Total Energy Consumption','Total_Energy_Consumption_xx_01','Total Energy Consumption');
 /*!40000 ALTER TABLE `thing_item_measurement` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -80,4 +106,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-11-09 18:24:58
+-- Dump completed on 2023-11-25 14:59:34
