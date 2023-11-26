@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, make_response
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED, HTTP_503_SERVICE_UNAVAILABLE
-from src.database import db, ThingItemMeasurement
+from src.database import db, ThingItemMeasurement, RoomStatus
 from sqlalchemy import func
 from flasgger import swag_from
 import requests 
@@ -323,3 +323,44 @@ def get_energy_consumption():
         'devices_count': devices_count,
         'switch_count': switch_count
     }), HTTP_200_OK
+
+
+@devices.get('/roomstatus')
+@jwt_required()
+@swag_from('./docs/devices/get_room_status.yml')
+def get_room_status():
+    try:
+        max_id = db.session.query(func.max(RoomStatus.id)).scalar()
+        room_status = RoomStatus.query.filter(RoomStatus.id == max_id).first()
+
+        if room_status is None:
+            response = make_response(jsonify({
+            'error': 'Room status not found'
+            }))
+            response.status_code=HTTP_404_NOT_FOUND
+            return response
+    except:
+        response = make_response(jsonify({
+            'error': 'The service is not available'
+        }))
+        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return response
+    return jsonify(room_status.serialize), HTTP_200_OK
+
+
+@devices.post('/roomstatus')
+@jwt_required()
+@swag_from('./docs/devices/room_status.yml')
+def room_status():
+    status = request.json.get('status', '')
+    try:
+        entry = RoomStatus(status = status)
+        db.session.add(entry)
+        db.session.commit()
+    except:
+        response = make_response(jsonify({
+                'error': 'The service is not available'
+            }))
+        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return response
+    return jsonify({'result': 'success'}), HTTP_200_OK
