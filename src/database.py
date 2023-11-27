@@ -43,7 +43,8 @@ class ThingItemMeasurement(db.Model):
 
 class RoomStatus(db.Model):
     id=db.Column(db.Integer, primary_key=True)
-    status=db.Column(db.String(9), nullable=False)
+    status=db.Column(db.Boolean, nullable=False)
+    amount=db.Column(db.Integer, nullable=False)
     timestamp=db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
@@ -52,5 +53,6 @@ class RoomStatus(db.Model):
        return {
             'id': self.id,
             'status': self.status,
+            'amount': self.amount,
             'timestamp': self.timestamp,
        }
