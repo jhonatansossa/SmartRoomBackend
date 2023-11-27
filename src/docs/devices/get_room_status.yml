@@ -1,5 +1,5 @@
 GET last room status
-Returns id, status and time it was created
+Returns detection (bool) and the amount of detected people
 ---
 tags:
   - Devices
