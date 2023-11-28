@@ -1,6 +1,7 @@
 anyio==3.6.2
 argon2-cffi==21.3.0
 argon2-cffi-bindings==21.2.0
+astroid==2.9.3
 asttokens==2.2.0
 attrs==22.1.0
 backcall==0.2.0
@@ -18,6 +19,7 @@ defusedxml==0.7.1
 entrypoints==0.4
 executing==1.2.0
 fastjsonschema==2.16.2
+flake8==3.9.2
 flasgger==0.9.5
 Flask==2.2.2
 Flask-Cors==3.0.10
@@ -31,6 +33,7 @@ importlib-resources==5.10.0
 ipykernel==6.17.1
 ipython==8.7.0
 ipython-genutils==0.2.0
+isort==5.12.0
 itsdangerous==2.1.2
 jedi==0.18.2
 Jinja2==3.1.2
@@ -39,8 +42,10 @@ jupyter-server==1.23.3
 jupyter_client==7.4.7
 jupyter_core==5.1.0
 jupyterlab-pygments==0.2.2
+lazy-object-proxy==1.9.0
 MarkupSafe==2.1.1
 matplotlib-inline==0.1.6
+mccabe==0.6.1
 mistune==2.0.4
 mypy-extensions==0.4.3
 nbclassic==0.4.8
@@ -64,9 +69,12 @@ prompt-toolkit==3.0.33
 psutil==5.9.4
 ptyprocess==0.7.0
 pure-eval==0.2.2
+pycodestyle==2.7.0
 pycparser==2.21
+pyflakes==2.3.1
 Pygments==2.13.0
 PyJWT==2.6.0
+pylint==2.12.2
 PyMySQL==1.0.2
 pyparsing==3.0.9
 pyproject_hooks==1.0.0
@@ -85,6 +93,7 @@ SQLAlchemy==1.4.42
 stack-data==0.6.2
 terminado==0.17.0
 tinycss2==1.2.1
+toml==0.10.2
 tomli==2.0.1
 tornado==6.2
 traitlets==5.6.0
@@ -95,4 +104,5 @@ wcwidth==0.2.5
 webencodings==0.5.1
 websocket-client==1.4.2
 Werkzeug==2.2.2
+wrapt==1.13.3
 zipp==3.10.0
