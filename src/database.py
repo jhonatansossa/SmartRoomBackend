@@ -40,3 +40,19 @@ class ThingItemMeasurement(db.Model):
             'item_name': self.item_name,
             'measurement_name': self.measurement_name
        }
+
+class RoomStatus(db.Model):
+    id=db.Column(db.Integer, primary_key=True)
+    status=db.Column(db.Boolean, nullable=False)
+    amount=db.Column(db.Integer, nullable=False)
+    timestamp=db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def serialize(self):
+       """Return room status data in easily serializable format"""
+       return {
+            'id': self.id,
+            'status': self.status,
+            'amount': self.amount,
+            'timestamp': self.timestamp,
+       }

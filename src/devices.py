@@ -1,10 +1,11 @@
 from flask import Blueprint, jsonify, request, make_response
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED, HTTP_503_SERVICE_UNAVAILABLE
-from src.database import db, ThingItemMeasurement
+from src.database import db, ThingItemMeasurement, RoomStatus
 from sqlalchemy import func
 from flasgger import swag_from
 import requests 
 import os
+import time
 from flask_jwt_extended import jwt_required
 from urllib.parse import quote
 from datetime import datetime
@@ -201,7 +202,6 @@ def change_state(thingid, itemid):
     state=request.json.get('state', '')
     itemname=item.item_name
     
-    print(itemname, state)
     url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname}/state"
     response = requests.put(url, data=state, headers=headers, auth=(username, password))
 
@@ -253,7 +253,6 @@ def last_measurement():
     if response.ok:
         return jsonify(response.json()), HTTP_200_OK
 
-    print("AAAA", response.json())
     ans = make_response(jsonify({
             'error': response.json()['error']['message']
         }))
@@ -323,3 +322,49 @@ def get_energy_consumption():
         'devices_count': devices_count,
         'switch_count': switch_count
     }), HTTP_200_OK
+
+
+@devices.get('/roomstatus')
+@jwt_required()
+@swag_from('./docs/devices/get_room_status.yml')
+def get_room_status():
+    try:
+        response = requests.get('https://'+OPENHAB_URL+':'+OPENHAB_PORT+'/rest/items/Number_people_detection_1000_05', auth=(username, password))
+
+        if not response.ok:
+            ans = make_response(jsonify({
+                'error': response.json()['error']['message']
+            }))
+            ans.status_code=response.status_code
+            return ans
+        
+        amount = int(response.json()["state"])
+        if amount > 0:
+            people_detection = True
+        else:
+            people_detection = False
+
+        try:
+            entry = RoomStatus(status = people_detection, amount = amount )
+            db.session.add(entry)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            db.create_all()
+
+        db.session.add(entry)
+        db.session.commit()
+
+    except Exception as e:
+        print(e)
+        response = make_response(jsonify({
+            'error': 'The service is not available'
+        }))
+        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return response
+    
+    return jsonify({
+        "detection": people_detection,
+        'amount': amount
+    }), HTTP_200_OK
+
