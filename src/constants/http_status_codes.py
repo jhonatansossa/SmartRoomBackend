@@ -1,3 +1,5 @@
+"""HTPP codes definition"""
+
 HTTP_200_OK = 200
 HTTP_201_CREATED = 201
 HTTP_202_ACCEPTED = 202
@@ -55,28 +57,3 @@ HTTP_508_LOOP_DETECTED = 508
 HTTP_509_BANDWIDTH_LIMIT_EXCEEDED = 509
 HTTP_510_NOT_EXTENDED = 510
 HTTP_511_NETWORK_AUTHENTICATION_REQUIRED = 511
-
-
-def is_informational(status):
-    # 1xx
-    pass
-
-
-def is_success(status):
-    # 2xx
-    pass
-
-
-def is_redirect(status):
-    # 3xx
-    pass
-
-
-def is_client_error():
-    # 4xx
-    pass
-
-
-def is_server_error():
-    # 5xx
-    pass
