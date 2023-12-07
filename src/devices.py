@@ -29,6 +29,8 @@ password = os.environ.get("PASSWORD")
 @jwt_required()
 @swag_from("./docs/devices/get_metadata.yml")
 def get_metadata():
+    auto_switchoff_items = request.json.get("items", "")
+
     items = requests.get(
         "https://" + OPENHAB_URL + ":" + OPENHAB_PORT + "/rest/items?recursive=false",
         auth=(username, password),
@@ -41,44 +43,26 @@ def get_metadata():
     items_converted = items.json()
 
     try:
-        db.session.query(ThingItemMeasurement).delete()
-    except:
-        db.create_all()
+        ThingItemMeasurement.__table__.drop(db.engine)
+    except Exception as e:
+        print(e)
 
+    db.create_all()
     db.session.commit()
 
     for item in items_converted:
         label = item["label"].split("_")
-        label_length = len(label)
         item_type = item["type"]
 
-        if item["label"] == "Total_Energy_Consumption":
-            entry = ThingItemMeasurement(
-                thing_id=1000,
-                item_id=1,
-                thing_name="Total Energy Consumption",
-                item_type=item_type,
-                item_name="Total_Energy_Consumption_xx_01",
-                measurement_name="Total Energy Consumption",
-            )
-            db.session.add(entry)
-            db.session.commit()
-            continue
-
-        if label_length == 6:
-            thing_name = label[4] + " " + label[0] + " " + label[1]
-            measurement_name = label[2] + " " + label[3]
-            thing_id = label[4]
-        elif label_length == 5:
-            thing_name = label[3] + " " + label[0] + " " + label[1]
-            measurement_name = label[2]
-            thing_id = label[3]
+        if item["name"] in auto_switchoff_items:
+            auto_switchoff = True
         else:
-            thing_name = label[2] + " " + label[0]
-            measurement_name = label[1]
-            thing_id = label[2]
+            auto_switchoff = False
 
+        thing_id = label[-2]
         item_id = label[-1]
+        measurement_name = label[-3]
+        thing_name = " ".join([thing_id] + label[:-3])
         item_name = item["name"]
 
         entry = ThingItemMeasurement(
@@ -88,9 +72,13 @@ def get_metadata():
             item_type=item_type,
             item_name=item_name,
             measurement_name=measurement_name,
+            auto_switchoff=auto_switchoff,
         )
         db.session.add(entry)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except:
+            db.session.rollback()
 
     return jsonify({"message": "Success"}), HTTP_200_OK
 
