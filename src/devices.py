@@ -29,6 +29,8 @@ password = os.environ.get("PASSWORD")
 @jwt_required()
 @swag_from("./docs/devices/get_metadata.yml")
 def get_metadata():
+    auto_switchoff_items = request.json.get("items", "")
+
     items = requests.get(
         "https://" + OPENHAB_URL + ":" + OPENHAB_PORT + "/rest/items?recursive=false",
         auth=(username, password),
@@ -41,44 +43,26 @@ def get_metadata():
     items_converted = items.json()
 
     try:
-        db.session.query(ThingItemMeasurement).delete()
-    except:
-        db.create_all()
+        ThingItemMeasurement.__table__.drop(db.engine)
+    except Exception as e:
+        print(e)
 
+    db.create_all()
     db.session.commit()
 
     for item in items_converted:
         label = item["label"].split("_")
-        label_length = len(label)
         item_type = item["type"]
 
-        if item["label"] == "Total_Energy_Consumption":
-            entry = ThingItemMeasurement(
-                thing_id=1000,
-                item_id=1,
-                thing_name="Total Energy Consumption",
-                item_type=item_type,
-                item_name="Total_Energy_Consumption_xx_01",
-                measurement_name="Total Energy Consumption",
-            )
-            db.session.add(entry)
-            db.session.commit()
-            continue
-
-        if label_length == 6:
-            thing_name = label[4] + " " + label[0] + " " + label[1]
-            measurement_name = label[2] + " " + label[3]
-            thing_id = label[4]
-        elif label_length == 5:
-            thing_name = label[3] + " " + label[0] + " " + label[1]
-            measurement_name = label[2]
-            thing_id = label[3]
+        if item["name"] in auto_switchoff_items:
+            auto_switchoff = True
         else:
-            thing_name = label[2] + " " + label[0]
-            measurement_name = label[1]
-            thing_id = label[2]
+            auto_switchoff = False
 
+        thing_id = label[-2]
         item_id = label[-1]
+        measurement_name = label[-3]
+        thing_name = " ".join([thing_id] + label[:-3])
         item_name = item["name"]
 
         entry = ThingItemMeasurement(
@@ -88,9 +72,13 @@ def get_metadata():
             item_type=item_type,
             item_name=item_name,
             measurement_name=measurement_name,
+            auto_switchoff=auto_switchoff,
         )
         db.session.add(entry)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except:
+            db.session.rollback()
 
     return jsonify({"message": "Success"}), HTTP_200_OK
 
@@ -254,8 +242,8 @@ def change_state(thingid, itemid):
     state = request.json.get("state", "")
     itemname = item.item_name
 
-    url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname}/state"
-    response = requests.put(url, data=state, headers=headers, auth=(username, password))
+    url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname}"
+    response = requests.post(url, data=state, headers=headers, auth=(username, password))
 
     if response.ok:
         return response.content, HTTP_202_ACCEPTED
@@ -372,10 +360,11 @@ def get_energy_consumption():
         if len(state) != 0 and state[0]["state"] == "ON":
             devices_count += 1
     try:
-        devices = (
-            ThingItemMeasurement.query.filter_by(measurement_name="meterwatts")
-            .with_entities(ThingItemMeasurement.item_name)
-            .all()
+        device = (
+        ThingItemMeasurement.query.filter_by(item_name=item_name, auto_switchoff=1)
+        .with_entities(ThingItemMeasurement.item_name)
+        .first()
+
         )
     except:
         response = make_response(jsonify({"error": "The service is not available"}))
@@ -452,3 +441,52 @@ def get_room_status():
         return response
 
     return jsonify({"detection": people_detection, "amount": amount}), HTTP_200_OK
+
+
+@devices.post("/automaticturnoffdevices")
+@jwt_required()
+@swag_from("./docs/devices/turn_off_devices.yml")
+def turn_off_devices_with_auto():
+    devices_count_off = 0
+
+    response = requests.get(
+        f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items?recursive=false&fields=name,state",
+        auth=(username, password),
+    )
+
+    if not response.ok:
+        ans = make_response(jsonify({"error": response.json()["error"]["message"]}))
+        ans.status_code = response.status_code
+        return ans
+
+    try:
+        
+        response_json = response.json()
+    except json.JSONDecodeError:
+        
+        ans = make_response(jsonify({"error": "Invalid JSON response from OpenHAB"}))
+        ans.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return ans
+
+    for device in response_json:
+        item_name = device["name"]
+
+        
+        if device["state"] == "ON" and ThingItemMeasurement.query.filter_by(item_name=item_name, auto_switchoff=1).first():
+            
+            headers = {"Content-type": "text/plain"}
+            url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}/state"
+            response = requests.put(url, data="OFF", headers=headers, auth=(username, password))
+
+            if response.ok:
+                devices_count_off += 1
+            else:
+                print(f"Error turning off device {item_name}: {response.json()['error']['message']}")
+
+    return jsonify(
+        {
+            "devices_count_off": devices_count_off,
+            "message": "Devices turned off successfully",
+        }
+    ), HTTP_200_OK
+

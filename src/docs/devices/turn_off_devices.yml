@@ -1,0 +1,15 @@
+Turn off devices automatically
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: Devices turned off successfully
+  503:
+    description: Service is unavailable 

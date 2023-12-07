@@ -32,9 +32,10 @@ class ThingItemMeasurement(db.Model):
     item_type = db.Column(db.String(500), nullable=False)
     item_name = db.Column(db.String(500), nullable=False)
     measurement_name = db.Column(db.String(500), nullable=False)
+    auto_switchoff = db.Column(db.Boolean, nullable=False)
 
     def __repr__(self):
-        return f"Thing Id: {self.thing_id}, Item Id: {self.item_id}, Thing: {self.thing_name}, Item Type: {self.item_type}, Item Name: {self.item_name}, Measurement: {self.measurement_name}"
+        return f"Thing Id: {self.thing_id}, Item Id: {self.item_id}, Thing: {self.thing_name}, Item Type: {self.item_type}, Item Name: {self.item_name}, Measurement: {self.measurement_name}, Auto Switch Off: {self.auto_switchoff}"
 
     @property
     def serialize(self):
@@ -42,10 +43,11 @@ class ThingItemMeasurement(db.Model):
         return {
             "thing_id": self.thing_id,
             "item_id": self.item_id,
-            "device_name": self.device_name,
+            "thing_name": self.thing_name,
             "item_type": self.item_type,
             "item_name": self.item_name,
             "measurement_name": self.measurement_name,
+            "auto_switchoff": self.auto_switchoff,
         }
 
 
