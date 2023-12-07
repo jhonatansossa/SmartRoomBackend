@@ -242,8 +242,8 @@ def change_state(thingid, itemid):
     state = request.json.get("state", "")
     itemname = item.item_name
 
-    url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname}/state"
-    response = requests.put(url, data=state, headers=headers, auth=(username, password))
+    url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname}"
+    response = requests.post(url, data=state, headers=headers, auth=(username, password))
 
     if response.ok:
         return response.content, HTTP_202_ACCEPTED
