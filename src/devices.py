@@ -440,3 +440,51 @@ def get_room_status():
         return response
 
     return jsonify({"detection": people_detection, "amount": amount}), HTTP_200_OK
+
+@devices.post("/automaticturnoffdevices")
+@jwt_required()
+@swag_from("./docs/devices/turn_off_devices.yml")
+def turn_off_devices_with_auto():
+    devices_count_off = 0
+
+    response = requests.get(
+        f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items?recursive=false&fields=name,state",
+        auth=(username, password),
+    )
+
+    if not response.ok:
+        ans = make_response(jsonify({"error": response.json()["error"]["message"]}))
+        ans.status_code = response.status_code
+        return ans
+
+    try:
+        
+        response_json = response.json()
+    except json.JSONDecodeError:
+        
+        ans = make_response(jsonify({"error": "Invalid JSON response from OpenHAB"}))
+        ans.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return ans
+
+    for device in response_json:
+        item_name = device["name"]
+
+        
+        if device["state"] == "ON" and ThingItemMeasurement.query.filter_by(item_name=item_name, auto_switchoff=1).first():
+            
+            headers = {"Content-type": "text/plain"}
+            url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}/state"
+            response = requests.put(url, data="OFF", headers=headers, auth=(username, password))
+
+            if response.ok:
+                devices_count_off += 1
+            else:
+                print(f"Error turning off device {item_name}: {response.json()['error']['message']}")
+
+    return jsonify(
+        {
+            "devices_count_off": devices_count_off,
+            "message": "Devices turned off successfully",
+        }
+    ), HTTP_200_OK
+
