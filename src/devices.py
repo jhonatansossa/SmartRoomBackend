@@ -449,39 +449,31 @@ def get_room_status():
 def turn_off_devices_with_auto():
     devices_count_off = 0
 
-    response = requests.get(
-        f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items?recursive=false&fields=name,state",
-        auth=(username, password),
-    )
-
-    if not response.ok:
-        ans = make_response(jsonify({"error": response.json()["error"]["message"]}))
-        ans.status_code = response.status_code
-        return ans
-
     try:
         
-        response_json = response.json()
-    except json.JSONDecodeError:
+        devices_to_turn_off = ThingItemMeasurement.query.filter_by(auto_switchoff=1).all()
+    except Exception as e:
+        print(f"Error getting devices: {str(e)}")
+        response = make_response(jsonify({"error": "The service is not available"}))
+        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return response
+
+    for device in devices_to_turn_off:
+        item_name = device.item_name
+
         
-        ans = make_response(jsonify({"error": "Invalid JSON response from OpenHAB"}))
-        ans.status_code = HTTP_503_SERVICE_UNAVAILABLE
-        return ans
+        headers = {"Content-type": "text/plain"}
+        url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}"
+        response = requests.post(url, data="OFF", headers=headers, auth=(username, password))
 
-    for device in response_json:
-        item_name = device["name"]
-
-        
-        if device["state"] == "ON" and ThingItemMeasurement.query.filter_by(item_name=item_name, auto_switchoff=1).first():
-            
-            headers = {"Content-type": "text/plain"}
-            url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}/state"
-            response = requests.put(url, data="OFF", headers=headers, auth=(username, password))
-
-            if response.ok:
-                devices_count_off += 1
-            else:
-                print(f"Error turning off device {item_name}: {response.json()['error']['message']}")
+        if response.ok:
+            devices_count_off += 1
+        else:
+            error_message = response.json().get('error', {}).get('message', 'Unknown error')
+            print(f"Error turning off device {item_name}: {error_message}")
+            response = make_response(jsonify({"error": f"Failed to turn off device {item_name}: {error_message}"}))
+            response.status_code = HTTP_404_NOT_FOUND  
+            return response
 
     return jsonify(
         {
@@ -489,4 +481,5 @@ def turn_off_devices_with_auto():
             "message": "Devices turned off successfully",
         }
     ), HTTP_200_OK
+
 
