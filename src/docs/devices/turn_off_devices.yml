@@ -14,5 +14,5 @@ responses:
   503:
     description: Service is unavailable 
   404:
-    description: Device not found
+    description: Devices not found
 
