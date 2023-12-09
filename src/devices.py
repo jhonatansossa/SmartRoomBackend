@@ -360,10 +360,11 @@ def get_energy_consumption():
         if len(state) != 0 and state[0]["state"] == "ON":
             devices_count += 1
     try:
-        devices = (
-            ThingItemMeasurement.query.filter_by(measurement_name="meterwatts")
-            .with_entities(ThingItemMeasurement.item_name)
-            .all()
+        device = (
+        ThingItemMeasurement.query.filter_by(item_name=item_name, auto_switchoff=1)
+        .with_entities(ThingItemMeasurement.item_name)
+        .first()
+
         )
     except:
         response = make_response(jsonify({"error": "The service is not available"}))
@@ -440,3 +441,45 @@ def get_room_status():
         return response
 
     return jsonify({"detection": people_detection, "amount": amount}), HTTP_200_OK
+
+
+@devices.put("/automaticturnoffdevices")  
+@jwt_required()
+@swag_from("./docs/devices/turn_off_devices.yml")
+def turn_off_devices_with_auto():
+    devices_count_off = 0
+
+    try:
+        devices_to_turn_off = ThingItemMeasurement.query.filter_by(auto_switchoff=1).all()
+    except Exception as e:
+        print(f"Error getting devices: {str(e)}")
+        response = make_response(jsonify({"error": "The service is not available"}))
+        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+        return response
+
+    for device in devices_to_turn_off:
+        item_name = device.item_name
+
+        headers = {"Content-type": "text/plain"}
+        url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}"
+        
+       
+        response = requests.put(url, data="OFF", headers=headers, auth=(username, password))
+
+        if response.ok:
+            devices_count_off += 1
+        else:
+            error_message = response.json().get('error', {}).get('message', 'Unknown error')
+            print(f"Error turning off device {item_name}: {error_message}")
+            response = make_response(jsonify({"error": f"Failed to turn off device {item_name}: {error_message}"}))
+            response.status_code = HTTP_404_NOT_FOUND
+            return response
+
+    return jsonify(
+        {
+            "devices_count_off": devices_count_off,
+            "message": "Devices turned off successfully",
+        }
+    ), HTTP_200_OK
+
+
