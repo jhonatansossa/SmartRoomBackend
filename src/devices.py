@@ -15,8 +15,9 @@ import time
 from flask_jwt_extended import jwt_required
 from urllib.parse import quote
 from datetime import datetime
+from flask_socketio import SocketIO
 
-
+socketio = SocketIO()
 devices = Blueprint("devices", __name__, url_prefix="/api/v1/devices")
 
 OPENHAB_URL = os.environ.get("OPENHAB_URL")
@@ -475,11 +476,11 @@ def turn_off_devices_with_auto():
             response.status_code = HTTP_404_NOT_FOUND
             return response
 
+    socketio.emit('devices-off', {'data': 'The devices have been automatically turned off'})
+
     return jsonify(
         {
             "devices_count_off": devices_count_off,
             "message": "Devices turned off successfully",
         }
     ), HTTP_200_OK
-
-
