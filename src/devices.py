@@ -443,14 +443,13 @@ def get_room_status():
     return jsonify({"detection": people_detection, "amount": amount}), HTTP_200_OK
 
 
-@devices.post("/automaticturnoffdevices")
+@devices.put("/automaticturnoffdevices")
 @jwt_required()
 @swag_from("./docs/devices/turn_off_devices.yml")
 def turn_off_devices_with_auto():
     devices_count_off = 0
 
     try:
-        
         devices_to_turn_off = ThingItemMeasurement.query.filter_by(auto_switchoff=1).all()
     except Exception as e:
         print(f"Error getting devices: {str(e)}")
@@ -461,19 +460,31 @@ def turn_off_devices_with_auto():
     for device in devices_to_turn_off:
         item_name = device.item_name
 
-        
         headers = {"Content-type": "text/plain"}
         url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}"
-        response = requests.post(url, data="OFF", headers=headers, auth=(username, password))
+
+        # Change from requests.post to requests.put
+        response = requests.put(url, data="OFF", headers=headers, auth=(username, password))
+
+        # Check if the response content type is JSON
+        if 'application/json' in response.headers.get('content-type', ''):
+            try:
+                # Try to parse the response as JSON
+                response_json = response.json()
+                if not response.ok:
+                    error_message = response_json.get('error', {}).get('message', 'Unknown error')
+                    print(f"Error turning off device {item_name}: {error_message}")
+                    response = make_response(jsonify({"error": f"Failed to turn off device {item_name}: {error_message}"}))
+                    response.status_code = HTTP_404_NOT_FOUND
+                    return response
+            except requests.exceptions.JSONDecodeError:
+                # Handle the case where the response is not valid JSON
+                pass
 
         if response.ok:
             devices_count_off += 1
         else:
-            error_message = response.json().get('error', {}).get('message', 'Unknown error')
-            print(f"Error turning off device {item_name}: {error_message}")
-            response = make_response(jsonify({"error": f"Failed to turn off device {item_name}: {error_message}"}))
-            response.status_code = HTTP_404_NOT_FOUND  
-            return response
+            print(f"Non-JSON response received. Status Code: {response.status_code}, Content: {response.text}")
 
     return jsonify(
         {
@@ -481,5 +492,4 @@ def turn_off_devices_with_auto():
             "message": "Devices turned off successfully",
         }
     ), HTTP_200_OK
-
 
