@@ -1,0 +1,18 @@
+POST alarm if the door has been opened for 5 or more minutes
+Returns a boolean, if true it also sends a message to the frontend
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: Door alarm status
+  404:
+    description: Door status not found
+  503:
+    description: Service is unavailable

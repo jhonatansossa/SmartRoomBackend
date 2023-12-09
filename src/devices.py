@@ -14,7 +14,7 @@ import os
 import time
 from flask_jwt_extended import jwt_required
 from urllib.parse import quote
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_socketio import SocketIO
 
 socketio = SocketIO()
@@ -484,3 +484,36 @@ def turn_off_devices_with_auto():
             "message": "Devices turned off successfully",
         }
     ), HTTP_200_OK
+
+
+@devices.post("/dooralarm")
+@jwt_required()
+@swag_from("./docs/devices/door_alarm.yml")
+def door_alarm():
+    minutes = 5
+    door_sensor = "Door_Sensor_sensordoor_12_01"
+    start_time = datetime.utcnow() - timedelta(minutes=minutes)
+    start_time_formatted = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    response = requests.get(
+        "https://"
+        + OPENHAB_URL
+        + ":"
+        + OPENHAB_PORT
+        + "/rest/persistence/items/"
+        + door_sensor
+        + "?starttime="
+        + start_time_formatted,
+        auth=(username, password),
+    )
+
+    if not response.ok:
+        ans = make_response(jsonify({"error": response.json()["error"]["message"]}))
+        ans.status_code = response.status_code
+
+    has_been_open = all(state["state"] == "OPEN" for state in response["data"])
+
+    if has_been_open:
+        socketio.emit('door-alarm', {'data': 'The door has been opened for more than 5 minutes'})
+
+    return jsonify({"alarm": has_been_open}), HTTP_200_OK
