@@ -510,10 +510,12 @@ def door_alarm():
     if not response.ok:
         ans = make_response(jsonify({"error": response.json()["error"]["message"]}))
         ans.status_code = response.status_code
+        return ans
 
-    has_been_open = all(state["state"] == "OPEN" for state in response["data"])
+    available_datapoints = response.json()["datapoints"]
+    has_been_open = available_datapoints != "0" and all(state["state"] == "OPEN" for state in response.json()["data"])
 
     if has_been_open:
         socketio.emit('door-alarm', {'data': 'The door has been opened for more than 5 minutes'})
-
-    return jsonify({"alarm": has_been_open}), HTTP_200_OK
+    
+    return jsonify({"alarm": has_been_open, "datapoints": available_datapoints}), HTTP_200_OK
