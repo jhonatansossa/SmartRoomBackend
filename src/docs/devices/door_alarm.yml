@@ -1,5 +1,6 @@
 POST alarm if the door has been opened for 5 or more minutes
-Returns a boolean, if true it also sends a message to the frontend
+If the door has been opened for 5 minutes, it sends a message to the frontend through socketio on 'door-alarm'
+Returns the alarm status and datapoints received from openhab
 ---
 tags:
   - Devices
