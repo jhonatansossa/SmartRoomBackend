@@ -1,4 +1,5 @@
 Turn off devices automatically
+Sends a message to the frontend through socketio on 'devices-off'
 ---
 tags:
   - Devices
