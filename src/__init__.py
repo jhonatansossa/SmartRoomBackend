@@ -4,7 +4,6 @@ import os
 from datetime import timedelta
 from flask import Flask
 from flask_jwt_extended import JWTManager
-from flask_socketio import SocketIO
 from flask_cors import CORS
 from flasgger import Swagger
 from src.auth import auth
