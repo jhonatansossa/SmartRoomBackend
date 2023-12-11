@@ -1,4 +1,4 @@
-GET metadata from all devices, populating the thing_item_measurement table with thing, item, and measurement names and thing & item id's
+GET metadata from all devices, populating the thing_item_measurement table with thing name, item name, item type, measurement name and if the device is able to be switched off automatically
 In order for this to work, item labels must be written like 'thingname_measurement_thingid_itemid'. Example - 'oven_voltage_01_01'
 ---
 tags:
@@ -8,6 +8,18 @@ parameters:
   - in: header
     name: Authorization
     required: true
+  - name: body
+    description: The body should contain a list with the devices that can be switched of automatically
+    in: body
+    required: true
+    schema:
+      type: object
+      required:
+        - "items"
+      properties:
+        items:
+          type: "list"
+          example: ["Smart_Metering_switchbinary_08_01", "Smart_Metering_switchbinary_09_01", "Smart_Metering_switchbinary_10_01", "LED_Lights_switch_1000_02"]
 
 responses:
   200:

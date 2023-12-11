@@ -8,8 +8,9 @@ from flask_cors import CORS
 from flasgger import Swagger
 from src.auth import auth
 from src.database import db
-from src.devices import devices
+from src.devices import devices, socketio
 from src.config.swagger import template, swagger_config
+
 
 # Application Factory
 def create_app(test_config=None):
@@ -43,5 +44,6 @@ def create_app(test_config=None):
     app.register_blueprint(devices)
 
     Swagger(app, config=swagger_config, template=template)
+    socketio.init_app(app, cors_allowed_origins="*")
 
     return app
