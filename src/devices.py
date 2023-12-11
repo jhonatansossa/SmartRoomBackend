@@ -449,7 +449,6 @@ def get_room_status():
 
 
 @devices.put("/automaticturnoffdevices")  
-@swag_from("./docs/devices/turn_off_devices.yml")
 def turn_off_devices_with_auto():
     if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
         seconds = 30
