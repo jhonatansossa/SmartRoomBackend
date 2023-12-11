@@ -11,6 +11,7 @@ from src.database import db
 from src.devices import devices, socketio
 from src.config.swagger import template, swagger_config
 
+
 # Application Factory
 def create_app(test_config=None):
     """Flask APP creation"""

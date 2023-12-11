@@ -1,27 +1,31 @@
-from flask import Blueprint, jsonify, request, make_response
+import threading
+from flask import Blueprint, jsonify, request, make_response, current_app
 from src.constants.http_status_codes import (
     HTTP_200_OK,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
     HTTP_202_ACCEPTED,
     HTTP_503_SERVICE_UNAVAILABLE,
+    HTTP_401_UNAUTHORIZED,
 )
+from src.utilities.utils import check_if_turn_off
 from src.database import db, ThingItemMeasurement, RoomStatus
 from sqlalchemy import func
 from flasgger import swag_from
 import requests
 import os
 import time
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_socketio import SocketIO
 from urllib.parse import quote
 from datetime import datetime, timedelta
-from flask_socketio import SocketIO
 
 socketio = SocketIO()
 devices = Blueprint("devices", __name__, url_prefix="/api/v1/devices")
 
 OPENHAB_URL = os.environ.get("OPENHAB_URL")
 OPENHAB_PORT = os.environ.get("OPENHAB_PORT")
+OPENHAB_TOKEN = os.environ.get("OPENHAB_TOKEN")
 username = os.environ.get("USERNAME")
 password = os.environ.get("PASSWORD")
 
@@ -445,45 +449,24 @@ def get_room_status():
 
 
 @devices.put("/automaticturnoffdevices")  
-@jwt_required()
 @swag_from("./docs/devices/turn_off_devices.yml")
 def turn_off_devices_with_auto():
-    devices_count_off = 0
+    if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
+        seconds = 30
+        try:
+            background_thread = threading.Thread(target=check_if_turn_off, args=(current_app.app_context(), seconds, socketio), daemon=True)
+            background_thread.start()
 
-    try:
-        devices_to_turn_off = ThingItemMeasurement.query.filter_by(auto_switchoff=1).all()
-    except Exception as e:
-        print(f"Error getting devices: {str(e)}")
-        response = make_response(jsonify({"error": "The service is not available"}))
-        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
-        return response
+            response = make_response(jsonify({"message": "The request will be processed"}))
+            response.status_code = HTTP_200_OK
+        except Exception as e:
+            response = make_response(jsonify({"message": f"The service is not available. Associated error: {e}"}))
+            response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        response = make_response(jsonify({"message": "Unauthorized"}))
+        response.status_code = HTTP_401_UNAUTHORIZED
 
-    for device in devices_to_turn_off:
-        item_name = device.item_name
-
-        headers = {"Content-type": "text/plain"}
-        url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}"
-        
-       
-        response = requests.put(url, data="OFF", headers=headers, auth=(username, password))
-
-        if response.ok:
-            devices_count_off += 1
-        else:
-            error_message = response.json().get('error', {}).get('message', 'Unknown error')
-            print(f"Error turning off device {item_name}: {error_message}")
-            response = make_response(jsonify({"error": f"Failed to turn off device {item_name}: {error_message}"}))
-            response.status_code = HTTP_404_NOT_FOUND
-            return response
-
-    socketio.emit('devices-off', {'data': 'The devices have been automatically turned off'})
-
-    return jsonify(
-        {
-            "devices_count_off": devices_count_off,
-            "message": "Devices turned off successfully",
-        }
-    ), HTTP_200_OK
+    return response
 
 
 @devices.post("/dooralarm")
