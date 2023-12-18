@@ -8,14 +8,14 @@ from src.constants.http_status_codes import (
     HTTP_503_SERVICE_UNAVAILABLE,
     HTTP_401_UNAUTHORIZED,
 )
-from src.utilities.utils import check_if_turn_off
+from src.utilities.utils import turn_off_devices, trigger_door_alarm, terminate_turnoff_flag, terminate_dooralarm_flag
 from src.database import db, ThingItemMeasurement, RoomStatus
 from sqlalchemy import func
 from flasgger import swag_from
 import requests
 import os
 import time
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required
 from flask_socketio import SocketIO
 from urllib.parse import quote
 from datetime import datetime, timedelta
@@ -447,13 +447,23 @@ def get_room_status():
     return jsonify({"detection": people_detection, "amount": amount}), HTTP_200_OK
 
 
-@devices.put("/automaticturnoffdevices")  
+@devices.put("/automaticturnoffdevices")
 def turn_off_devices_with_auto():
+    global current_turnoff_thread, terminate_turnoff_flag
+
     if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
         seconds = 30
         try:
-            background_thread = threading.Thread(target=check_if_turn_off, args=(current_app.app_context(), seconds, socketio), daemon=True)
-            background_thread.start()
+            terminate_turnoff_flag.set()
+
+            if current_turnoff_thread and current_turnoff_thread.is_alive():
+                current_turnoff_thread.join()
+                print(f"Process {current_turnoff_thread} killed")
+
+            terminate_turnoff_flag.clear()
+
+            current_turnoff_thread = threading.Thread(target=turn_off_devices, args=(current_app.app_context(), seconds, socketio), daemon=True)
+            current_turnoff_thread.start()
 
             response = make_response(jsonify({"message": "The request will be processed"}))
             response.status_code = HTTP_200_OK
@@ -471,32 +481,29 @@ def turn_off_devices_with_auto():
 @jwt_required()
 @swag_from("./docs/devices/door_alarm.yml")
 def door_alarm():
-    minutes = 5
-    door_sensor = "Door_Sensor_sensordoor_12_01"
-    start_time = datetime.utcnow() - timedelta(minutes=minutes)
-    start_time_formatted = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    global current_dooralarm_thread, terminate_dooralarm_flag
 
-    response = requests.get(
-        "https://"
-        + OPENHAB_URL
-        + ":"
-        + OPENHAB_PORT
-        + "/rest/persistence/items/"
-        + door_sensor
-        + "?starttime="
-        + start_time_formatted,
-        auth=(username, password),
-    )
+    if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
+        minutes = 5
+        try:
+            terminate_dooralarm_flag.set()
 
-    if not response.ok:
-        ans = make_response(jsonify({"error": response.json()["error"]["message"]}))
-        ans.status_code = response.status_code
-        return ans
+            if current_dooralarm_thread and current_dooralarm_thread.is_alive():
+                current_dooralarm_thread.join()
+                print(f"Process {current_dooralarm_thread} killed")
 
-    available_datapoints = response.json()["datapoints"]
-    has_been_open = available_datapoints != "0" and all(state["state"] == "OPEN" for state in response.json()["data"])
+            terminate_dooralarm_flag.clear()
 
-    if has_been_open:
-        socketio.emit('door-alarm', {'data': 'The door has been opened for more than 5 minutes'})
-    
-    return jsonify({"alarm": has_been_open, "datapoints": available_datapoints}), HTTP_200_OK
+            current_dooralarm_thread = threading.Thread(target=trigger_door_alarm, args=(current_app.app_context(), minutes, socketio), daemon=True)
+            current_dooralarm_thread.start()
+
+            response = make_response(jsonify({"message": "The request will be processed"}))
+            response.status_code = HTTP_200_OK
+        except Exception as e:
+            response = make_response(jsonify({"message": f"The service is not available. Associated error: {e}"}))
+            response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        response = make_response(jsonify({"message": "Unauthorized"}))
+        response.status_code = HTTP_401_UNAUTHORIZED
+
+    return response

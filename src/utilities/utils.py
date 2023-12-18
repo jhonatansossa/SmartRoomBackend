@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+import threading
 from src.database import ThingItemMeasurement
 from flask import jsonify, make_response
 from src.constants.http_status_codes import (
@@ -8,32 +9,28 @@ from src.constants.http_status_codes import (
     HTTP_404_NOT_FOUND,
     HTTP_503_SERVICE_UNAVAILABLE,
 )
-from datetime import datetime, timedelta
+from datetime import datetime
 
 OPENHAB_URL = os.environ.get("OPENHAB_URL")
 OPENHAB_PORT = os.environ.get("OPENHAB_PORT")
 username = os.environ.get("USERNAME")
 password = os.environ.get("PASSWORD")
 
-def check_if_turn_off(app_context, seconds, socketio):
-    app_context.push()
-    
-    start_time = datetime.now()
-    time.sleep(seconds)
-    end_time = datetime.now()
+current_turnoff_thread = None
+current_dooralarm_thread = None
+terminate_turnoff_flag = threading.Event()
+terminate_dooralarm_flag = threading.Event()
 
-    start_time, end_time = start_time.strftime(
-        "%Y-%m-%dT%H:%M:%S.%f"
-    ), end_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
+def check_if_empty_or_open(start_time, end_time, thing_id, item_id):
 
-    number_people_itemname = (
-        ThingItemMeasurement.query.filter_by(thing_id=1000, item_id=5)
+    itemname = (
+        ThingItemMeasurement.query.filter_by(thing_id=thing_id, item_id=item_id)
         .with_entities(ThingItemMeasurement.item_name).first()
     )
 
     try:
-        persisted_url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/persistence/items/{number_people_itemname[0]}?starttime={start_time}&endtime={end_time}"
-        live_url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{number_people_itemname[0]}/state"
+        persisted_url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/persistence/items/{itemname[0]}?starttime={start_time}&endtime={end_time}"
+        live_url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname[0]}/state"
     except Exception as e: 
         print(f"There is not an item for the number of people: {str(e)}")
 
@@ -42,25 +39,40 @@ def check_if_turn_off(app_context, seconds, socketio):
 
     states = [float(x["state"]) for x in persisted_response.json()["data"]] + [live_response.json()]
 
-    execute_turn_off = len([x for x in states if int(x) != 0]) == 0
+    empty_or_open = len([x for x in states if int(x) != 0]) == 0
+
+    return empty_or_open
 
 
-    if execute_turn_off:
-        turn_off_devices(socketio)
+def turn_off_devices(app_context, seconds, socketio):
+    global terminate_turnoff_flag
 
-    return execute_turn_off
+    app_context.push()
 
+    start_time = datetime.now()
+    for _ in range(seconds):
+        if terminate_turnoff_flag.is_set():
+            return
+        time.sleep(1)
 
-def turn_off_devices(socketio):
+    end_time = datetime.now()
+
+    start_time, end_time = start_time.strftime(
+        "%Y-%m-%dT%H:%M:%S.%f"
+    ), end_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
+    is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
+
+    if not is_empty:
+        return
+
     devices_count_off = 0
 
     try:
         devices_to_turn_off = ThingItemMeasurement.query.filter_by(auto_switchoff=1).all()
     except Exception as e:
-        print(f"Error getting devices: {str(e)}")
-        response = make_response(jsonify({"error": "The service is not available"}))
-        response.status_code = HTTP_503_SERVICE_UNAVAILABLE
-        return response
+        print(f"Error getting devices: {str(e)}, {HTTP_503_SERVICE_UNAVAILABLE}")
+        return
 
     for device in devices_to_turn_off:
         item_name = device.item_name
@@ -74,16 +86,37 @@ def turn_off_devices(socketio):
             devices_count_off += 1
         else:
             error_message = response.json().get('error', {}).get('message', 'Unknown error')
-            print(f"Error turning off device {item_name}: {error_message}")
-            response = make_response(jsonify({"error": f"Failed to turn off device {item_name}: {error_message}"}))
-            response.status_code = HTTP_404_NOT_FOUND
-            return response
+            print(f"Error turning off device {item_name}: {error_message}, {HTTP_404_NOT_FOUND}")
+            return
 
     socketio.emit('devices-off', {'data': 'The devices have been automatically turned off'})
 
-    return jsonify(
-        {
-            "devices_count_off": devices_count_off,
-            "message": "Devices turned off successfully",
-        }
-    ), HTTP_200_OK
+    return
+
+
+def trigger_door_alarm(app_context, minutes, socketio):
+    global terminate_dooralarm_flag
+
+    app_context.push()
+
+    seconds = minutes * 60
+
+    start_time = datetime.now()
+    for _ in range(seconds):
+        if terminate_dooralarm_flag.is_set():
+            return
+        time.sleep(1)
+
+    end_time = datetime.now()
+
+    start_time, end_time = start_time.strftime(
+        "%Y-%m-%dT%H:%M:%S.%f"
+    ), end_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
+    is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
+    is_open = check_if_empty_or_open(start_time, end_time, 12, 1)
+
+    if is_empty and is_open:
+        socketio.emit('door-alarm', {'data': 'The door has been opened for more than 5 minutes'})
+
+    return

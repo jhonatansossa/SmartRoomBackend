@@ -30,9 +30,6 @@ auth = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 def register():
     """Endpoint for registration"""
 
-    # Disabling the registration endpoint for security reasons in production
-    return jsonify({"error": "Not available"}), HTTP_503_SERVICE_UNAVAILABLE
-
     username = request.json["username"]
     email = request.json["email"]
     password = request.json["password"]
