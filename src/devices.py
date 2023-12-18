@@ -365,17 +365,16 @@ def get_energy_consumption():
         if len(state) != 0 and state[0]["state"] == "ON":
             devices_count += 1
     try:
-        device = (
-        ThingItemMeasurement.query.filter_by(item_name=item_name, auto_switchoff=1)
-        .with_entities(ThingItemMeasurement.item_name)
-        .first()
-
+        devices = (
+            ThingItemMeasurement.query.filter_by(measurement_name="meterwatts")
+            .with_entities(ThingItemMeasurement.item_name)
+            .all()
         )
     except:
         response = make_response(jsonify({"error": "The service is not available"}))
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
         return response
-
+    
     for device in devices:
         item_name = device.item_name
 
