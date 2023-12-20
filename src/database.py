@@ -16,6 +16,9 @@ class User(db.Model):
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.Text(), nullable=False)
+    user_type = db.Column(
+        db.Integer, db.ForeignKey("user_types.id", ondelete="CASCADE"), nullable=False
+    )
     created_at = db.Column(db.DateTime, default=datetime.now())
     updated_at = db.Column(db.DateTime, onupdate=datetime.now())
 
@@ -67,4 +70,38 @@ class RoomStatus(db.Model):
             "status": self.status,
             "amount": self.amount,
             "timestamp": self.timestamp,
+        }
+
+
+class UserTypes(db.Model):
+    """User types schema definition"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(20), nullable=False)
+
+    @property
+    def serialize(self):
+        """Return user types data in easily serializable format"""
+        return {
+            "id": self.id,
+            "type": self.type,
+        }
+
+
+class AlertTimers(db.Model):
+    """Aler timers schema definition"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    alert_name = db.Column(db.String(30), nullable=False)
+    timer_value = db.Column(db.Integer, nullable=False)
+    timer_units = db.Column(db.String(20), nullable=False)
+
+    @property
+    def serialize(self):
+        """Return user types data in easily serializable format"""
+        return {
+            "id": self.id,
+            "alert_name": self.alert_name,
+            "timer_value": self.timer_value,
+            "timer_units": self.timer_units,
         }

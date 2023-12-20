@@ -1,0 +1,42 @@
+SET the timer value and units for a specific alarm/alert
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+  - name: body
+    description: The body should contain the alert/alarm id, the new timer value and the unit
+    in: body
+    required: true
+    schema:
+      type: object
+      required:
+        - "id"
+        - "timer_units"
+        - "timer_value"
+      properties:
+        id:
+          type: "integer"
+          example: 1
+        timer_units:
+          type: "string"
+          example: 'seconds'
+        timer_value:
+          type: "integer"
+          example: 30
+  
+responses:
+  200:
+    description: Accepted
+
+  400:
+    description: Bad request
+
+  404:
+    description: Item does not exist
+
+  500:
+    description: Internal error
