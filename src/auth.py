@@ -18,13 +18,16 @@ from src.constants.http_status_codes import (
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_409_CONFLICT,
+    HTTP_404_NOT_FOUND,
+    HTTP_403_FORBIDDEN
 )
-from src.database import User, db
+from src.database import User, db, UserTypes
 
 auth = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
 @auth.post("/register")
+@jwt_required()
 @swag_from("./docs/auth/register.yml")
 def register():
     """Endpoint for registration"""
@@ -32,6 +35,17 @@ def register():
     username = request.json["username"]
     email = request.json["email"]
     password = request.json["password"]
+    user_type = request.json["user_type"]
+
+    user_id = get_jwt_identity()
+
+    is_admin = User.query.filter_by(id=user_id).with_entities(User.user_type).first()
+
+    if is_admin[0] != 1:
+        return (
+            jsonify({"error": "You are not allowed to created new users"}),
+            HTTP_403_FORBIDDEN,
+        )
 
     if len(password) < 8:
         return jsonify({"error": "Password is too short"}), HTTP_400_BAD_REQUEST
@@ -61,6 +75,12 @@ def register():
             HTTP_400_BAD_REQUEST,
         )
 
+    if not isinstance(user_type, str):
+        return (
+            jsonify({"error": "User type must be an string"}),
+            HTTP_400_BAD_REQUEST,
+        )
+
     if not validators.email(email):
         return jsonify({"error": "Email is not valid"}), HTTP_400_BAD_REQUEST
 
@@ -70,9 +90,14 @@ def register():
     if User.query.filter_by(username=username).first() is not None:
         return jsonify({"error": "Username is already in use"}), HTTP_409_CONFLICT
 
+    user_types = UserTypes.query.filter_by(type=user_type).with_entities(UserTypes.id).first()
+
+    if not user_types:
+        return jsonify({"error": "User type not found"}), HTTP_404_NOT_FOUND
+
     pwd_hash = generate_password_hash(password)
 
-    user = User(username=username, password=pwd_hash, email=email)
+    user = User(username=username, password=pwd_hash, email=email, user_type=user_types[0])
     db.session.add(user)
     db.session.commit()
 
