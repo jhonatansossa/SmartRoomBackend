@@ -7,18 +7,24 @@ from src.constants.http_status_codes import (
     HTTP_202_ACCEPTED,
     HTTP_503_SERVICE_UNAVAILABLE,
     HTTP_401_UNAUTHORIZED,
+    HTTP_500_INTERNAL_SERVER_ERROR,
 )
-from src.utilities.utils import turn_off_devices, trigger_door_alarm, terminate_turnoff_flag, terminate_dooralarm_flag
-from src.database import db, ThingItemMeasurement, RoomStatus
-from sqlalchemy import func
+from src.utilities.utils import (
+    turn_off_devices,
+    trigger_door_alarm,
+    current_turnoff_thread,
+    current_dooralarm_thread,
+    terminate_turnoff_flag,
+    terminate_dooralarm_flag,
+)
+from src.database import db, ThingItemMeasurement, RoomStatus, AlertTimers
 from flasgger import swag_from
 import requests
 import os
-import time
 from flask_jwt_extended import jwt_required
 from flask_socketio import SocketIO
 from urllib.parse import quote
-from datetime import datetime, timedelta
+from datetime import datetime
 
 socketio = SocketIO()
 devices = Blueprint("devices", __name__, url_prefix="/api/v1/devices")
@@ -248,7 +254,9 @@ def change_state(thingid, itemid):
     itemname = item.item_name
 
     url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname}"
-    response = requests.post(url, data=state, headers=headers, auth=(username, password))
+    response = requests.post(
+        url, data=state, headers=headers, auth=(username, password)
+    )
 
     if response.ok:
         return response.content, HTTP_202_ACCEPTED
@@ -374,7 +382,7 @@ def get_energy_consumption():
         response = make_response(jsonify({"error": "The service is not available"}))
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
         return response
-    
+
     for device in devices:
         item_name = device.item_name
 
@@ -452,7 +460,18 @@ def turn_off_devices_with_auto():
     global current_turnoff_thread, terminate_turnoff_flag
 
     if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
-        seconds = 30
+
+        timer = (
+            AlertTimers.query.filter_by(id=1)
+            .with_entities(AlertTimers.timer_value, AlertTimers.timer_units)
+            .first()
+        )
+
+        if timer.timer_units == "minutes":
+            seconds = timer.timer_value * 60
+        else:
+            seconds = timer.timer_value
+
         try:
             terminate_turnoff_flag.set()
 
@@ -462,13 +481,23 @@ def turn_off_devices_with_auto():
 
             terminate_turnoff_flag.clear()
 
-            current_turnoff_thread = threading.Thread(target=turn_off_devices, args=(current_app.app_context(), seconds, socketio), daemon=True)
+            current_turnoff_thread = threading.Thread(
+                target=turn_off_devices,
+                args=(current_app.app_context(), seconds, socketio),
+                daemon=True,
+            )
             current_turnoff_thread.start()
 
-            response = make_response(jsonify({"message": "The request will be processed"}))
+            response = make_response(
+                jsonify({"message": "The request will be processed"})
+            )
             response.status_code = HTTP_200_OK
         except Exception as e:
-            response = make_response(jsonify({"message": f"The service is not available. Associated error: {e}"}))
+            response = make_response(
+                jsonify(
+                    {"message": f"The service is not available. Associated error: {e}"}
+                )
+            )
             response.status_code = HTTP_503_SERVICE_UNAVAILABLE
     else:
         response = make_response(jsonify({"message": "Unauthorized"}))
@@ -477,14 +506,23 @@ def turn_off_devices_with_auto():
     return response
 
 
-@devices.post("/dooralarm")
-@jwt_required()
-@swag_from("./docs/devices/door_alarm.yml")
+@devices.put("/dooralarm")
 def door_alarm():
     global current_dooralarm_thread, terminate_dooralarm_flag
 
     if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
-        minutes = 5
+
+        timer = (
+            AlertTimers.query.filter_by(id=0)
+            .with_entities(AlertTimers.timer_value, AlertTimers.timer_units)
+            .first()
+        )
+
+        if timer.timer_units == "minutes":
+            seconds = timer.timer_value * 60
+        else:
+            seconds = timer.timer_value
+
         try:
             terminate_dooralarm_flag.set()
 
@@ -494,16 +532,113 @@ def door_alarm():
 
             terminate_dooralarm_flag.clear()
 
-            current_dooralarm_thread = threading.Thread(target=trigger_door_alarm, args=(current_app.app_context(), minutes, socketio), daemon=True)
+            current_dooralarm_thread = threading.Thread(
+                target=trigger_door_alarm,
+                args=(current_app.app_context(), seconds, socketio),
+                daemon=True,
+            )
             current_dooralarm_thread.start()
 
-            response = make_response(jsonify({"message": "The request will be processed"}))
+            response = make_response(
+                jsonify({"message": "The request will be processed"})
+            )
             response.status_code = HTTP_200_OK
         except Exception as e:
-            response = make_response(jsonify({"message": f"The service is not available. Associated error: {e}"}))
+            response = make_response(
+                jsonify(
+                    {"message": f"The service is not available. Associated error: {e}"}
+                )
+            )
             response.status_code = HTTP_503_SERVICE_UNAVAILABLE
     else:
         response = make_response(jsonify({"message": "Unauthorized"}))
         response.status_code = HTTP_401_UNAUTHORIZED
 
     return response
+
+
+@devices.get("/get_alarm_timers")
+@jwt_required()
+@swag_from("./docs/devices/get_alarm_timers.yml")
+def get_alarm_timers():
+
+    result = AlertTimers.query.all()
+
+    if result is None:
+        response = make_response(
+            jsonify({"error": "It was not possible to retrieve any timer"})
+        )
+        response.status_code = HTTP_500_INTERNAL_SERVER_ERROR
+        return response
+
+    output = []
+
+    for row in result:
+        output.append(
+            {
+                "id": row.id,
+                "alert_name": row.alert_name,
+                "timer_value": row.timer_value,
+                "timer_units": row.timer_units,
+            }
+        )
+
+    return jsonify(output), HTTP_200_OK
+
+
+@devices.put("/set_alarm_timers")
+@jwt_required()
+@swag_from("./docs/devices/set_alarm_timers.yml")
+def set_alarm_timers():
+
+    alert_id = request.json.get("id", "")
+    timer_units = request.json.get("timer_units", "")
+    timer_value = request.json.get("timer_value", "")
+
+    if alert_id == "" or timer_units == "" or timer_value == "":
+        return (
+            jsonify({"error": "Please provide alert_id, timer_units and timer_value"}),
+            HTTP_400_BAD_REQUEST,
+        )
+
+    if timer_units not in ["seconds", "minutes"]:
+        return (
+            jsonify({"error": "Timer units is neither seconds nor minutes"}),
+            HTTP_400_BAD_REQUEST,
+        )
+
+    if not isinstance(timer_value, int):
+        return (
+            jsonify({"error": "The timer_value must be an integer"}),
+            HTTP_400_BAD_REQUEST,
+        )
+
+    if timer_value < 0:
+        return (
+            jsonify({"error": "Timer value cannot be less than zero"}),
+            HTTP_400_BAD_REQUEST,
+        )
+
+    if not isinstance(alert_id, int):
+        return (
+            jsonify({"error": "The alert id must be an integer"}),
+            HTTP_400_BAD_REQUEST,
+        )
+
+    ids = AlertTimers.query.with_entities(AlertTimers.id).all()
+
+    if alert_id not in [id_[0] for id_ in ids]:
+        return jsonify({"error": "Alarm id not found"}), HTTP_404_NOT_FOUND
+
+    try:
+        AlertTimers.query.filter_by(id=alert_id).update(
+            {"timer_units": timer_units, "timer_value": timer_value}
+        )
+        db.session.commit()
+    except Exception as e:
+        return (
+            jsonify({"error": f"It was not possible to update the timer. Reason: {e}"}),
+            HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return {"result": "The timer has been successfully updated"}, HTTP_200_OK

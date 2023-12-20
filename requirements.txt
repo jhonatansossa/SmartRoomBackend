@@ -84,11 +84,15 @@ defusedxml==0.7.1
     #   -r requirements.in
     #   nbconvert
 dnspython==1.16.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   eventlet
 entrypoints==0.4
     # via
     #   -r requirements.in
     #   jupyter-client
+eventlet==0.30.2
+    # via -r requirements.in
 executing==1.2.0
     # via
     #   -r requirements.in
@@ -117,8 +121,11 @@ flask-socketio==5.3.6
     # via -r requirements.in
 flask-sqlalchemy==3.0.2
     # via -r requirements.in
-greenlet==1.1.3.post0
-    # via sqlalchemy
+greenlet==3.0.2
+    # via
+    #   -r requirements.in
+    #   eventlet
+    #   sqlalchemy
 gunicorn==20.1.0
     # via -r requirements.in
 h11==0.14.0
@@ -414,6 +421,7 @@ six==1.16.0
     #   -r requirements.in
     #   asttokens
     #   bleach
+    #   eventlet
     #   flasgger
     #   flask-cors
     #   python-dateutil

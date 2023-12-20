@@ -7,7 +7,10 @@ app = "smart-room"
 primary_region = "arn"
 
 [build]
-  builder = "paketobuildpacks/builder:base"
+  builtin = "python"
+
+[build.settings]
+  pythonbase = "3.8-slim-buster"
 
 [env]
   PORT = "8080"

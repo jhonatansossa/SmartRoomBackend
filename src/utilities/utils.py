@@ -3,7 +3,6 @@ import time
 import requests
 import threading
 from src.database import ThingItemMeasurement
-from flask import jsonify, make_response
 from src.constants.http_status_codes import (
     HTTP_200_OK,
     HTTP_404_NOT_FOUND,
@@ -21,23 +20,41 @@ current_dooralarm_thread = None
 terminate_turnoff_flag = threading.Event()
 terminate_dooralarm_flag = threading.Event()
 
+door_status = {"CLOSED": 1, "OPEN": 0}
+
+
 def check_if_empty_or_open(start_time, end_time, thing_id, item_id):
 
     itemname = (
         ThingItemMeasurement.query.filter_by(thing_id=thing_id, item_id=item_id)
-        .with_entities(ThingItemMeasurement.item_name).first()
+        .with_entities(ThingItemMeasurement.item_name)
+        .first()
     )
 
     try:
         persisted_url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/persistence/items/{itemname[0]}?starttime={start_time}&endtime={end_time}"
-        live_url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname[0]}/state"
-    except Exception as e: 
-        print(f"There is not an item for the number of people: {str(e)}")
+        live_url = (
+            f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{itemname[0]}/state"
+        )
+    except Exception as e:
+        print(
+            f"There is not an item for this combination if thing_id and item_id: {str(e)}"
+        )
 
     persisted_response = requests.get(persisted_url, auth=(username, password))
     live_response = requests.get(live_url, auth=(username, password))
 
-    states = [float(x["state"]) for x in persisted_response.json()["data"]] + [live_response.json()]
+    persisted_response = [
+        door_status[x["state"]] if (x["state"] in door_status) else float(x["state"])
+        for x in persisted_response.json()["data"]
+    ]
+    live_response = [
+        door_status[live_response.content.decode()]
+        if live_response.content.decode() in door_status
+        else float(live_response.content.decode())
+    ]
+
+    states = persisted_response + live_response
 
     empty_or_open = len([x for x in states if int(x) != 0]) == 0
 
@@ -69,7 +86,9 @@ def turn_off_devices(app_context, seconds, socketio):
     devices_count_off = 0
 
     try:
-        devices_to_turn_off = ThingItemMeasurement.query.filter_by(auto_switchoff=1).all()
+        devices_to_turn_off = ThingItemMeasurement.query.filter_by(
+            auto_switchoff=1
+        ).all()
     except Exception as e:
         print(f"Error getting devices: {str(e)}, {HTTP_503_SERVICE_UNAVAILABLE}")
         return
@@ -80,26 +99,32 @@ def turn_off_devices(app_context, seconds, socketio):
         headers = {"Content-type": "text/plain"}
         url = f"https://{OPENHAB_URL}:{OPENHAB_PORT}/rest/items/{item_name}"
 
-        response = requests.post(url, data="OFF", headers=headers, auth=(username, password))
+        response = requests.post(
+            url, data="OFF", headers=headers, auth=(username, password)
+        )
 
         if response.ok:
             devices_count_off += 1
         else:
-            error_message = response.json().get('error', {}).get('message', 'Unknown error')
-            print(f"Error turning off device {item_name}: {error_message}, {HTTP_404_NOT_FOUND}")
+            error_message = (
+                response.json().get("error", {}).get("message", "Unknown error")
+            )
+            print(
+                f"Error turning off device {item_name}: {error_message}, {HTTP_404_NOT_FOUND}"
+            )
             return
 
-    socketio.emit('devices-off', {'data': 'The devices have been automatically turned off'})
+    socketio.emit(
+        "devices-off", {"data": "The devices have been automatically turned off"}
+    )
 
     return
 
 
-def trigger_door_alarm(app_context, minutes, socketio):
+def trigger_door_alarm(app_context, seconds, socketio):
     global terminate_dooralarm_flag
 
     app_context.push()
-
-    seconds = minutes * 60
 
     start_time = datetime.now()
     for _ in range(seconds):
@@ -113,10 +138,12 @@ def trigger_door_alarm(app_context, minutes, socketio):
         "%Y-%m-%dT%H:%M:%S.%f"
     ), end_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
-    is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
     is_open = check_if_empty_or_open(start_time, end_time, 12, 1)
+    is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
 
     if is_empty and is_open:
-        socketio.emit('door-alarm', {'data': 'The door has been opened for more than 5 minutes'})
+        socketio.emit(
+            "door-alarm", {"data": "The door has been opened for more than 5 minutes"}
+        )
 
     return

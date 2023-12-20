@@ -18,7 +18,6 @@ from src.constants.http_status_codes import (
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_409_CONFLICT,
-    HTTP_503_SERVICE_UNAVAILABLE
 )
 from src.database import User, db
 
@@ -131,7 +130,13 @@ def me():
     user_id = get_jwt_identity()
     user = User.query.filter_by(id=user_id).first()
 
-    return jsonify({"username": user.username, "email": user.email}), HTTP_200_OK
+    return jsonify(
+        {
+            "username": user.username,
+            "email": user.email,
+            "user_type": user.user_type
+        }
+    ), HTTP_200_OK
 
 
 @auth.get("/token/refresh")

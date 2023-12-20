@@ -44,6 +44,6 @@ def create_app(test_config=None):
     app.register_blueprint(devices)
 
     Swagger(app, config=swagger_config, template=template)
-    socketio.init_app(app, cors_allowed_origins="*")
+    socketio.init_app(app, cors_allowed_origins="*", async_mode="eventlet")
 
     return app

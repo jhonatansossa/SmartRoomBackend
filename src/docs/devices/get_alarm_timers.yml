@@ -1,0 +1,16 @@
+GET the id, alert name, timer value and timer units for all the alarms/alerts
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+
+responses:
+  200:
+    description: Devices info is retrieved
+
+  500:
+    description: Internal server error
