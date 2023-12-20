@@ -78,6 +78,7 @@ def turn_off_devices(app_context, seconds, socketio):
         "%Y-%m-%dT%H:%M:%S.%f"
     ), end_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
+    # Check if the room is empty. The parameters are for the item with thing_id=1000 and item_id=5 (People counter)
     is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
 
     if not is_empty:
@@ -138,7 +139,10 @@ def trigger_door_alarm(app_context, seconds, socketio):
         "%Y-%m-%dT%H:%M:%S.%f"
     ), end_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
+    # # Check if the door is open. The parameters are for the item with thing_id=12 and item_id=1 (Door contact sensor)
     is_open = check_if_empty_or_open(start_time, end_time, 12, 1)
+
+    # Check if the room is empty. The parameters are for the item with thing_id=1000 and item_id=5 (People counter)
     is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
 
     if is_empty and is_open:

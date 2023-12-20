@@ -460,7 +460,8 @@ def turn_off_devices_with_auto():
     global current_turnoff_thread, terminate_turnoff_flag
 
     if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
-
+        
+        # Get the timer for the alert to turn off the devices (id=1 in table alert_timers)
         timer = (
             AlertTimers.query.filter_by(id=1)
             .with_entities(AlertTimers.timer_value, AlertTimers.timer_units)
@@ -512,6 +513,7 @@ def door_alarm():
 
     if request.headers.get("X-Service-Token") == OPENHAB_TOKEN:
 
+        # Get the timer of the alert when the door was left open (id=0 in table alert_timers)
         timer = (
             AlertTimers.query.filter_by(id=0)
             .with_entities(AlertTimers.timer_value, AlertTimers.timer_units)
