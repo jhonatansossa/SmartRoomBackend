@@ -3,6 +3,9 @@ User Registration
 tags:
   - Authentication
 parameters:
+  - in: header
+    name: Authorization
+    required: true
   - name: body
     description: The body should contain the user Registration data
     in: body
@@ -13,6 +16,7 @@ parameters:
         - "email"
         - "password"
         - "username"
+        - "user_type"
       properties:
         email:
           type: "email"
@@ -24,6 +28,9 @@ parameters:
           type: "string"
           format: password
           example: "********"
+        user_type:
+          type: "string"
+          example: "admin"
 responses:
   201:
     description: When a user successfully signs up
@@ -33,3 +40,6 @@ responses:
 
   409:
     description: Email or username are in use
+
+  403:
+    description: User not allowed to create new users

@@ -89,7 +89,7 @@ class UserTypes(db.Model):
 
 
 class AlertTimers(db.Model):
-    """User types schema definition"""
+    """Aler timers schema definition"""
 
     id = db.Column(db.Integer, primary_key=True)
     alert_name = db.Column(db.String(30), nullable=False)
