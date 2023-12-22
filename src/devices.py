@@ -105,19 +105,7 @@ def get_all_relations():
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
         return response
 
-    output = []
-
-    for row in result:
-        output.append(
-            {
-                "thing_id": row.thing_id,
-                "item_id": row.item_id,
-                "thing_name": row.thing_name,
-                "item_name": row.item_name,
-                "item_type": row.item_type,
-                "measurement_name": row.measurement_name,
-            }
-        )
+    output = [row.serialize for row in result]
 
     return jsonify(output), HTTP_200_OK
 
@@ -133,18 +121,7 @@ def get_thing_relations(thingid):
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
         return response
 
-    output = []
-
-    for row in result:
-        output.append(
-            {
-                "thing_id": row.thing_id,
-                "item_id": row.item_id,
-                "thing_name": row.thing_name,
-                "item_name": row.item_name,
-                "measurement_name": row.measurement_name,
-            }
-        )
+    output = [row.serialize for row in result]
 
     return jsonify(output), HTTP_200_OK
 
