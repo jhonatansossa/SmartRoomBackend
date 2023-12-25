@@ -105,3 +105,24 @@ class AlertTimers(db.Model):
             "timer_value": self.timer_value,
             "timer_units": self.timer_units,
         }
+
+class NewItemNames(db.Model):
+    """New Item Names schema definition"""
+
+    thing_id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(db.String(500), nullable=False)
+    new_item_name = db.Column(db.String(500), nullable=False)
+
+    def __repr__(self):
+        return f"Thing Id: {self.thing_id}, Item Id: {self.item_id}, Item Name: {self.item_name}, New Item Name: {self.new_item_name}"
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializable format"""
+        return {
+            "thing_id": self.thing_id,
+            "item_id": self.item_id,
+            "item_name": self.item_name,
+            "new_item_name": self.new_item_name,
+        }

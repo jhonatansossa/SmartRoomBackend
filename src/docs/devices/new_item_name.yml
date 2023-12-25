@@ -1,0 +1,37 @@
+Set new name for the item by user
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+  - in: body
+    name: body
+    required: true
+    schema:
+      type: object
+      properties:
+        thing_id:
+          type: integer
+        item_id:
+          type: integer
+        item_name:
+          type: string
+        new_item_name:
+          type: string
+          example: Television 01
+    
+
+responses:
+  200:
+    description: New Item Name received
+
+  400:
+    description: Bad request
+  500:
+    description: Internal server error
+  404:
+    description: Not Found
+
