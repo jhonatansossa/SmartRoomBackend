@@ -1,0 +1,17 @@
+GET all new names for items
+---
+tags:
+  - Devices
+
+parameters:
+  - in: header
+    name: Authorization
+    required: true
+  
+
+responses:
+  200:
+    description: New names retrieved
+
+  500:
+    description: Internal Server Error

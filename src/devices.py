@@ -17,7 +17,7 @@ from src.utilities.utils import (
     terminate_turnoff_flag,
     terminate_dooralarm_flag,
 )
-from src.database import db, ThingItemMeasurement, RoomStatus, AlertTimers
+from src.database import db, ThingItemMeasurement, RoomStatus, AlertTimers,NewItemNames
 from flasgger import swag_from
 import requests
 import os
@@ -105,19 +105,7 @@ def get_all_relations():
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
         return response
 
-    output = []
-
-    for row in result:
-        output.append(
-            {
-                "thing_id": row.thing_id,
-                "item_id": row.item_id,
-                "thing_name": row.thing_name,
-                "item_name": row.item_name,
-                "item_type": row.item_type,
-                "measurement_name": row.measurement_name,
-            }
-        )
+    output = [row.serialize for row in result]
 
     return jsonify(output), HTTP_200_OK
 
@@ -133,18 +121,7 @@ def get_thing_relations(thingid):
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
         return response
 
-    output = []
-
-    for row in result:
-        output.append(
-            {
-                "thing_id": row.thing_id,
-                "item_id": row.item_id,
-                "thing_name": row.thing_name,
-                "item_name": row.item_name,
-                "measurement_name": row.measurement_name,
-            }
-        )
+    output = [row.serialize for row in result]
 
     return jsonify(output), HTTP_200_OK
 
@@ -644,3 +621,70 @@ def set_alarm_timers():
         )
 
     return {"result": "The timer has been successfully updated"}, HTTP_200_OK
+
+@devices.put("/new_item_names")
+@jwt_required()
+@swag_from("./docs/devices/new_item_name.yml")
+def add_new_item_name():
+    thing_id = request.json.get("thing_id", "")
+    item_id = request.json.get("item_id", "")
+    item_name = request.json.get("item_name", "")
+    new_item_name = request.json.get("new_item_name", "")
+    if not thing_id or not item_id or not item_name or not new_item_name:
+        response = make_response(
+            jsonify({"error": "Please provide thing_id, item_id, item_name, and new_item_name"}),
+        )
+        response.status_code = HTTP_400_BAD_REQUEST
+        return response  
+    if not ThingItemMeasurement.query.filter_by(thing_id=thing_id, item_id=item_id).first():
+        response = make_response(
+            jsonify({"error": "Provided thing_id and item_id do not exist in the thing_item_measurement table"}),
+        )
+        response.status_code = HTTP_404_NOT_FOUND
+        return response
+    try:        
+        existing_entry = NewItemNames.query.filter_by(thing_id=thing_id, item_id=item_id).first()
+        if existing_entry:
+            
+            
+            existing_entry.new_item_name = new_item_name
+        else:       
+            new_item_name_entry = NewItemNames(
+                thing_id=thing_id,
+                item_id=item_id,
+                item_name=item_name,
+                new_item_name=new_item_name
+            )
+            db.session.add(new_item_name_entry)
+        db.session.commit()
+    except IntegrityError as e:
+        
+        db.session.rollback()
+        response = make_response(
+            jsonify({"error": f"Failed to add/update new item name. Reason: {e}"}),
+        )
+        response.status_code = HTTP_500_INTERNAL_SERVER_ERROR
+        return response
+    except Exception as e:
+        response = make_response(
+            jsonify({"error": f"Failed to add/update new item name. Reason: {e}"}),
+        )
+        response.status_code = HTTP_500_INTERNAL_SERVER_ERROR
+        return response
+
+    return jsonify({"message": "New item name added/updated successfully"}), HTTP_200_OK
+
+
+@devices.get("/retrieve_new_item_names")
+@jwt_required()
+@swag_from("./docs/devices/retrieve_new_item_names.yml")
+def retrieve_new_item_names():
+    try:
+        new_item_names = NewItemNames.query.all()
+        item_names_data = [{"thing_id": entry.thing_id, "item_id": entry.item_id, "item_name": entry.item_name, "new_item_name": entry.new_item_name} for entry in new_item_names]
+    except Exception:
+        response = make_response(jsonify({"error": "Failed to retrieve data from new_item_names table"}))
+        response.status_code = HTTP_500_INTERNAL_SERVER_ERROR
+        return response
+
+    return jsonify({"new_item_names": item_names_data}), HTTP_200_OK
