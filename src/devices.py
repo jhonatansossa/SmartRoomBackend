@@ -138,8 +138,20 @@ def get_all():
         + "/rest/items?recursive=false&fields=name,state,label,editable,type",
         auth=(username, password),
     )
+
     if items.ok:
-        return items.json(), HTTP_200_OK
+        _items = []
+        for item in items.json():
+            label = item["label"].split("_")
+            thing_id = label[-2]
+            item_id = label[-1]
+            entry_exists = NewItemNames.query.filter_by(thing_id=thing_id, item_id=item_id).first()
+            if entry_exists:
+                item["display_name"] = entry_exists.new_item_name
+            else:
+                item["display_name"] = item["label"]
+            _items = _items + [item]
+        return _items, HTTP_200_OK
     else:
         response = make_response(jsonify({"error": "The service is not available"}))
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
@@ -622,15 +634,15 @@ def set_alarm_timers():
 
     return {"result": "The timer has been successfully updated"}, HTTP_200_OK
 
+
 @devices.put("/new_item_names")
 @jwt_required()
 @swag_from("./docs/devices/new_item_name.yml")
 def add_new_item_name():
     thing_id = request.json.get("thing_id", "")
     item_id = request.json.get("item_id", "")
-    item_name = request.json.get("item_name", "")
     new_item_name = request.json.get("new_item_name", "")
-    if not thing_id or not item_id or not item_name or not new_item_name:
+    if not thing_id or not item_id or not new_item_name:
         response = make_response(
             jsonify({"error": "Please provide thing_id, item_id, item_name, and new_item_name"}),
         )
@@ -642,37 +654,27 @@ def add_new_item_name():
         )
         response.status_code = HTTP_404_NOT_FOUND
         return response
-    try:        
-        existing_entry = NewItemNames.query.filter_by(thing_id=thing_id, item_id=item_id).first()
-        if existing_entry:
-            
-            
-            existing_entry.new_item_name = new_item_name
-        else:       
-            new_item_name_entry = NewItemNames(
-                thing_id=thing_id,
-                item_id=item_id,
-                item_name=item_name,
-                new_item_name=new_item_name
-            )
-            db.session.add(new_item_name_entry)
-        db.session.commit()
-    except IntegrityError as e:
-        
-        db.session.rollback()
-        response = make_response(
-            jsonify({"error": f"Failed to add/update new item name. Reason: {e}"}),
-        )
-        response.status_code = HTTP_500_INTERNAL_SERVER_ERROR
-        return response
-    except Exception as e:
-        response = make_response(
-            jsonify({"error": f"Failed to add/update new item name. Reason: {e}"}),
-        )
-        response.status_code = HTTP_500_INTERNAL_SERVER_ERROR
-        return response
 
-    return jsonify({"message": "New item name added/updated successfully"}), HTTP_200_OK
+    try:
+        existing_entry = NewItemNames.query.filter_by(thing_id=thing_id, item_id=item_id).first()
+    except Exception as e:
+        db.create_all()
+        existing_entry = None
+
+    if existing_entry:
+        existing_entry.new_item_name = new_item_name
+        message = "updated"
+    else:
+        new_item_name_entry = NewItemNames(
+            thing_id=thing_id,
+            item_id=item_id,
+            new_item_name=new_item_name
+        )
+        db.session.add(new_item_name_entry)
+        message = "added"
+    db.session.commit()
+
+    return jsonify({"message": f"New item name {message} successfully"}), HTTP_200_OK
 
 
 @devices.get("/retrieve_new_item_names")
@@ -681,7 +683,7 @@ def add_new_item_name():
 def retrieve_new_item_names():
     try:
         new_item_names = NewItemNames.query.all()
-        item_names_data = [{"thing_id": entry.thing_id, "item_id": entry.item_id, "item_name": entry.item_name, "new_item_name": entry.new_item_name} for entry in new_item_names]
+        item_names_data = [{"thing_id": entry.thing_id, "item_id": entry.item_id, "new_item_name": entry.new_item_name} for entry in new_item_names]
     except Exception:
         response = make_response(jsonify({"error": "Failed to retrieve data from new_item_names table"}))
         response.status_code = HTTP_500_INTERNAL_SERVER_ERROR
