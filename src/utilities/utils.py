@@ -132,6 +132,7 @@ def trigger_door_alarm(app_context, seconds, socketio):
     start_time = datetime.now()
     for _ in range(seconds):
         if terminate_dooralarm_flag.is_set():
+            print(f"Door Alarm Log: Thread terminated")
             return
         time.sleep(1)
 
