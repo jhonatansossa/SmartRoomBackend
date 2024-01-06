@@ -127,6 +127,8 @@ def trigger_door_alarm(app_context, seconds, socketio):
 
     app_context.push()
 
+    print(f"Door Alarm Log: Trigger timer")
+
     start_time = datetime.now()
     for _ in range(seconds):
         if terminate_dooralarm_flag.is_set():
