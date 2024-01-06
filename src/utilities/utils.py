@@ -145,9 +145,12 @@ def trigger_door_alarm(app_context, seconds, socketio):
     # Check if the room is empty. The parameters are for the item with thing_id=1000 and item_id=5 (People counter)
     is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
 
+    print(f"Door Alarm Log: is open {is_open} and is empty {is_open}")
+
     if is_empty and is_open:
         socketio.emit(
             "door-alarm", {"data": "The door has been opened for more than 5 minutes"}
         )
+        print(f"Door Alarm Log: Alarm emited")
 
     return
