@@ -524,6 +524,8 @@ def door_alarm():
         else:
             seconds = timer.timer_value
 
+        print(f"Door Alarm Log: Number of seconds {seconds}")
+
         try:
             terminate_dooralarm_flag.set()
 
