@@ -307,7 +307,17 @@ def last_measurement():
     )
 
     if response.ok:
-        return jsonify(response.json()), HTTP_200_OK
+
+        data=response.json()
+        for item in data["data"]:      
+            if "state" in item:
+                state_value = item["state"]
+                if state_value in ["OFF", "CLOSED"]:
+                    item["state"] = 0
+                elif state_value in ["ON", "OPEN"]:
+                    item["state"] = 1
+        
+        return jsonify(data), HTTP_200_OK
 
     ans = make_response(jsonify({"error": response.json()["error"]["message"]}))
     ans.status_code = response.status_code
