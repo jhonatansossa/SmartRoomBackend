@@ -8,7 +8,7 @@ from src.constants.http_status_codes import (
     HTTP_404_NOT_FOUND,
     HTTP_503_SERVICE_UNAVAILABLE,
 )
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 OPENHAB_URL = os.environ.get("OPENHAB_URL")
 OPENHAB_PORT = os.environ.get("OPENHAB_PORT")
@@ -66,13 +66,20 @@ def turn_off_devices(app_context, seconds, socketio):
 
     app_context.push()
 
-    start_time = datetime.now()
+    print(f"Turn off Devices Log: Trigger timer")
+
+    utc_plus_one = timezone(timedelta(hours=1))
+    start_time = datetime.utcnow()
+    start_time = start_time.replace(tzinfo=timezone.utc).astimezone(utc_plus_one)
+    print(f"Turn off Devices Log: {start_time}")
     for _ in range(seconds):
         if terminate_turnoff_flag.is_set():
+            print(f"Turn off Devices Log: Thread terminated")
             return
         time.sleep(1)
 
-    end_time = datetime.now()
+    end_time = datetime.utcnow()
+    end_time = end_time.replace(tzinfo=timezone.utc).astimezone(utc_plus_one)
 
     start_time, end_time = start_time.strftime(
         "%Y-%m-%dT%H:%M:%S.%f"
@@ -80,6 +87,8 @@ def turn_off_devices(app_context, seconds, socketio):
 
     # Check if the room is empty. The parameters are for the item with thing_id=1000 and item_id=5 (People counter)
     is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
+
+    print(f"Turn off Devices Log: is empty {is_empty}")
 
     if not is_empty:
         return
@@ -118,6 +127,7 @@ def turn_off_devices(app_context, seconds, socketio):
     socketio.emit(
         "devices-off", {"data": "The devices have been automatically turned off"}
     )
+    print(f"Turn off Devices Log: Alarm emited")
 
     return
 
@@ -129,14 +139,17 @@ def trigger_door_alarm(app_context, seconds, socketio):
 
     print(f"Door Alarm Log: Trigger timer")
 
-    start_time = datetime.now()
+    utc_plus_one = timezone(timedelta(hours=1))
+    start_time = datetime.utcnow()
+    start_time = start_time.replace(tzinfo=timezone.utc).astimezone(utc_plus_one)
     for _ in range(seconds):
         if terminate_dooralarm_flag.is_set():
             print(f"Door Alarm Log: Thread terminated")
             return
         time.sleep(1)
 
-    end_time = datetime.now()
+    end_time = datetime.utcnow()
+    end_time = end_time.replace(tzinfo=timezone.utc).astimezone(utc_plus_one)
 
     start_time, end_time = start_time.strftime(
         "%Y-%m-%dT%H:%M:%S.%f"
@@ -148,7 +161,7 @@ def trigger_door_alarm(app_context, seconds, socketio):
     # Check if the room is empty. The parameters are for the item with thing_id=1000 and item_id=5 (People counter)
     is_empty = check_if_empty_or_open(start_time, end_time, 1000, 5)
 
-    print(f"Door Alarm Log: is open {is_open} and is empty {is_open}")
+    print(f"Door Alarm Log: is open {is_open} and is empty {is_empty}")
 
     if is_empty and is_open:
         socketio.emit(
